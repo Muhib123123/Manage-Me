@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// NextAuth.js required models
+// ─────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─────────────────────────────────────────────
+// User model
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  accounts Account[]
+  sessions Session[]
+  videos   Video[]
+
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// Video model (app-specific)
+// ─────────────────────────────────────────────
+
+model Video {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Video type: normal YouTube video or YouTube Short
+  videoType String @default("video") // "video" | "short"
+
+  // YouTube metadata
+  title       String
+  description String? @db.Text
+  tags        String[]
+  privacy     String  @default("public") // "public" | "unlisted" | "private"
+
+  // Storage (Cloudflare R2 / S3)
+  storageUrl   String  // URL of the raw video file in cloud storage
+  thumbnailUrl String? // URL of the thumbnail (not used for Shorts)
+
+  // Scheduling
+  scheduledAt DateTime // The date and time to auto-upload to YouTube
+
+  // Status tracking
+  status       String  @default("PENDING") // "PENDING" | "UPLOADING" | "DONE" | "FAILED"
+  youtubeId    String? // YouTube video ID after successful upload
+  youtubeUrl   String? // Full YouTube URL (youtube.com/watch?v=youtubeId)
+  errorMessage String? // Error details if status is "FAILED"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

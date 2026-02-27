@@ -1,0 +1,72 @@
+import { Queue, Worker } from "bullmq";
+import IORedis from "ioredis";
+import { uploadVideoToYouTube } from "./youtube";
+import { prisma } from "./prisma";
+
+// Use Upstash Redis URL from env
+const redisUrl = process.env.UPSTASH_REDIS_URL;
+
+if (!redisUrl) {
+    console.warn("⚠️ UPSTASH_REDIS_URL is missing. Background video scheduling will not work.");
+}
+
+// Global connection to reuse in dev
+const connection = new IORedis(redisUrl || "redis://localhost:6379", {
+    maxRetriesPerRequest: null,
+    // Upstash requires TLS for rediss:// connections
+    ...(redisUrl?.startsWith("rediss://") && {
+        tls: { rejectUnauthorized: false },
+    }),
+});
+
+export const videoQueue = new Queue("youtube-uploads", { connection });
+
+// Prevent multiple workers in development HMR
+const globalForWorker = global as unknown as { videoWorker?: Worker };
+
+if (!globalForWorker.videoWorker && redisUrl) {
+    globalForWorker.videoWorker = new Worker(
+        "youtube-uploads",
+        async (job) => {
+            const { videoId } = job.data;
+
+            // Mark as uploading
+            await prisma.video.update({
+                where: { id: videoId },
+                data: { status: "UPLOADING" },
+            });
+
+            try {
+                const youtubeVideoId = await uploadVideoToYouTube(videoId);
+                const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+
+                // Mark as done
+                await prisma.video.update({
+                    where: { id: videoId },
+                    data: {
+                        status: "DONE",
+                        youtubeId: youtubeVideoId,
+                        youtubeUrl,
+                    },
+                });
+
+                console.log(`✅ Job ${job.id}: Video ${videoId} uploaded successfully!`);
+            } catch (error: any) {
+                // Mark as failed with error message
+                await prisma.video.update({
+                    where: { id: videoId },
+                    data: { status: "FAILED", errorMessage: error.message || "Unknown error" },
+                });
+                console.error(`❌ Job ${job.id}: Video ${videoId} upload failed:`, error);
+                throw error; // Re-throw so BullMQ marks job as failed
+            }
+        },
+        { connection, concurrency: 1 }
+    );
+
+    globalForWorker.videoWorker.on("failed", (job, err) => {
+        console.error(`BullMQ Job ${job?.id} failed:`, err);
+    });
+}
+
+export const videoWorker = globalForWorker.videoWorker;
