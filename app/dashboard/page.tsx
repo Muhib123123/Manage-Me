@@ -7,111 +7,106 @@ export default async function DashboardPage() {
     const session = await auth();
     const userId = session!.user.id;
 
-    // Fetch all videos for this user
     const [pending, published, failed] = await Promise.all([
         prisma.video.findMany({
             where: { userId, status: { in: ["PENDING", "UPLOADING"] } },
             orderBy: { scheduledAt: "asc" },
+            select: {
+                id: true, title: true, videoType: true, status: true,
+                scheduledAt: true, privacy: true,
+                storageUrl: true, thumbnailUrl: true,
+                youtubeId: true, errorMessage: true,
+            },
         }),
         prisma.video.findMany({
             where: { userId, status: "DONE" },
             orderBy: { updatedAt: "desc" },
+            select: {
+                id: true, title: true, videoType: true, status: true,
+                scheduledAt: true, privacy: true,
+                storageUrl: true, thumbnailUrl: true,
+                youtubeId: true, errorMessage: true,
+            },
         }),
         prisma.video.findMany({
             where: { userId, status: "FAILED" },
             orderBy: { updatedAt: "desc" },
+            select: {
+                id: true, title: true, videoType: true, status: true,
+                scheduledAt: true, privacy: true,
+                storageUrl: true, thumbnailUrl: true,
+                youtubeId: true, errorMessage: true,
+            },
         }),
     ]);
 
+    // Map youtubeId → full URL
+    const toRows = (videos: typeof pending) =>
+        videos.map((v) => ({
+            ...v,
+            youtubeUrl: v.youtubeId ? `https://www.youtube.com/watch?v=${v.youtubeId}` : null,
+        }));
+
     return (
-        <div style={{ maxWidth: "1100px" }}>
-            {/* Header */}
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: "36px",
-                }}
-            >
+        <div className="p-6">
+            {/* ── Page Header ───────────────────────────── */}
+            <div className="flex items-start justify-between mb-8">
                 <div>
-                    <h1
-                        style={{
-                            fontSize: "26px",
-                            fontWeight: 800,
-                            letterSpacing: "-0.5px",
-                            marginBottom: "4px",
-                        }}
-                    >
+                    <h1 className="text-2xl font-bold text-[var(--text)] tracking-tight mb-1">
                         Your Videos
                     </h1>
-                    <p style={{ color: "var(--muted)", fontSize: "14px" }}>
-                        Manage your scheduled and published YouTube content
+                    <p className="text-[var(--muted)] text-sm">
+                        Manage your scheduled and published YouTube content.
                     </p>
                 </div>
-
-                <Link href="/upload" className="btn-primary" style={{ fontSize: "14px" }}>
-                    <span>+</span> Schedule New Video
+                <Link href="/upload" className="btn-primary shrink-0 ml-4">
+                    + Schedule New Video
                 </Link>
             </div>
 
+            {/* ── Stats bar ─────────────────────────────── */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+                <StatCard label="Scheduled" value={pending.length} color="blue" />
+                <StatCard label="Published" value={published.length} color="green" />
+                <StatCard label="Failed" value={failed.length} color="red" />
+            </div>
+
             {/* ── Pending Section ───────────────────────── */}
-            <Section
-                title="📅 Pending"
-                subtitle="Waiting to be published"
-                count={pending.length}
-                accent="#f5a623"
-            >
+            <Section title="📅 Scheduled" count={pending.length} statusColor="amber">
                 {pending.length === 0 ? (
                     <EmptyState
                         icon="📅"
                         message="No scheduled uploads yet"
-                        cta="Schedule your first video"
+                        cta="Schedule your first video →"
                         href="/upload"
                     />
                 ) : (
-                    <div style={{ display: "grid", gap: "12px" }}>
-                        {pending.map((v) => (
-                            <VideoRow key={v.id} video={v} />
-                        ))}
+                    <div className="flex flex-col gap-3">
+                        {toRows(pending).map((v) => <VideoRow key={v.id} video={v} />)}
                     </div>
                 )}
             </Section>
 
             {/* ── Failed Section ─────────────────────────── */}
             {failed.length > 0 && (
-                <Section
-                    title="❌ Failed"
-                    subtitle="These uploads encountered errors"
-                    count={failed.length}
-                    accent="#ff3b5c"
-                >
-                    <div style={{ display: "grid", gap: "12px" }}>
-                        {failed.map((v) => (
-                            <VideoRow key={v.id} video={v} showError />
-                        ))}
+                <Section title="❌ Failed" count={failed.length} statusColor="red">
+                    <div className="flex flex-col gap-3">
+                        {toRows(failed).map((v) => <VideoRow key={v.id} video={v} showError />)}
                     </div>
                 </Section>
             )}
 
             {/* ── Published Section ──────────────────────── */}
-            <Section
-                title="✅ Published"
-                subtitle="Successfully uploaded to YouTube"
-                count={published.length}
-                accent="#22c55e"
-            >
+            <Section title="✅ Published" count={published.length} statusColor="green">
                 {published.length === 0 ? (
                     <EmptyState
                         icon="✅"
                         message="No published videos yet"
-                        cta="They'll appear here after scheduled uploads complete"
+                        cta="They'll appear here after scheduled uploads complete."
                     />
                 ) : (
-                    <div style={{ display: "grid", gap: "12px" }}>
-                        {published.map((v) => (
-                            <VideoRow key={v.id} video={v} />
-                        ))}
+                    <div className="flex flex-col gap-3">
+                        {toRows(published).map((v) => <VideoRow key={v.id} video={v} />)}
                     </div>
                 )}
             </Section>
@@ -121,93 +116,62 @@ export default async function DashboardPage() {
 
 /* ── Sub-components ──────────────────────────────── */
 
+const STAT_COLORS: Record<string, string> = {
+    blue: "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
+    green: "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+    red: "bg-red-50 text-red-700 border-red-100 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+};
+
+function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
+    return (
+        <div className={`p-4 rounded-xl border ${STAT_COLORS[color]} flex items-center justify-between`}>
+            <span className="text-sm font-medium">{label}</span>
+            <span className="text-2xl font-bold">{value}</span>
+        </div>
+    );
+}
+
+const SECTION_BADGE: Record<string, string> = {
+    amber: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400",
+    green: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400",
+    red: "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400",
+};
+
 function Section({
-    title,
-    subtitle,
-    count,
-    accent,
-    children,
+    title, count, statusColor, children,
 }: {
     title: string;
-    subtitle: string;
     count: number;
-    accent: string;
+    statusColor: string;
     children: React.ReactNode;
 }) {
     return (
-        <div style={{ marginBottom: "40px" }}>
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    marginBottom: "16px",
-                }}
-            >
-                <h2 style={{ fontSize: "16px", fontWeight: 700 }}>{title}</h2>
-                <span
-                    style={{
-                        padding: "2px 10px",
-                        borderRadius: "100px",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        background: `${accent}22`,
-                        color: accent,
-                        border: `1px solid ${accent}44`,
-                    }}
-                >
+        <div className="mb-8">
+            <div className="flex items-center gap-2.5 mb-3">
+                <h2 className="text-sm font-semibold text-[var(--text)]">{title}</h2>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${SECTION_BADGE[statusColor]}`}>
                     {count}
                 </span>
-                <span style={{ color: "var(--muted)", fontSize: "13px" }}>{subtitle}</span>
             </div>
             {children}
         </div>
     );
 }
 
-function EmptyState({
-    icon,
-    message,
-    cta,
-    href,
-}: {
-    icon: string;
-    message: string;
-    cta: string;
-    href?: string;
+function EmptyState({ icon, message, cta, href }: {
+    icon: string; message: string; cta: string; href?: string;
 }) {
     return (
-        <div
-            style={{
-                padding: "48px 24px",
-                borderRadius: "16px",
-                border: "1px dashed var(--border)",
-                textAlign: "center",
-                background: "var(--surface)",
-            }}
-        >
-            <div style={{ fontSize: "32px", marginBottom: "12px" }}>{icon}</div>
-            <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "16px" }}>
-                {message}
-            </p>
-            {href && (
-                <Link
-                    href={href}
-                    style={{
-                        color: "var(--primary)",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                        textDecoration: "none",
-                    }}
-                >
-                    {cta} →
+        <div className="py-10 px-6 rounded-xl border border-dashed border-[var(--border-solid)] text-center bg-[var(--surface)]">
+            <div className="text-3xl mb-2">{icon}</div>
+            <p className="text-[var(--muted)] text-sm mb-3">{message}</p>
+            {href ? (
+                <Link href={href} className="text-blue-600 text-sm font-medium hover:underline">
+                    {cta}
                 </Link>
-            )}
-            {!href && (
-                <p style={{ color: "var(--muted)", fontSize: "12px" }}>{cta}</p>
+            ) : (
+                <p className="text-[var(--muted)] text-xs">{cta}</p>
             )}
         </div>
     );
 }
-
-

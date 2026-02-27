@@ -13,25 +13,13 @@ export function ThemeToggle() {
     }, []);
 
     if (!mounted) {
-        return <div style={{ width: 40, height: 40 }} />;
+        return <div className="w-10 h-10" />;
     }
 
     return (
         <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "var(--surface-2)",
-                border: "1px solid var(--border)",
-                color: "var(--text)",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-            }}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text)] cursor-pointer transition-all duration-200 hover:scale-105"
             aria-label="Toggle Theme"
         >
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}

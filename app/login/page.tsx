@@ -12,118 +12,46 @@ export default function LoginPage() {
     };
 
     return (
-        <main
-            style={{
-                minHeight: "100vh",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "24px",
-                position: "relative",
-                overflow: "hidden",
-            }}
-        >
+        <main className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
             {/* Background blobs */}
-            <div
-                style={{
-                    position: "absolute",
-                    inset: 0,
-                    pointerEvents: "none",
-                    overflow: "hidden",
-                }}
-            >
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div
-                    style={{
-                        position: "absolute",
-                        width: "600px",
-                        height: "600px",
-                        borderRadius: "50%",
-                        background:
-                            "radial-gradient(circle, var(--primary-glow) 0%, transparent 70%)",
-                        top: "-100px",
-                        left: "-100px",
-                        animation: "float 6s ease-in-out infinite",
-                    }}
+                    className="absolute w-[600px] h-[600px] rounded-full -top-[100px] -left-[100px] animate-float"
+                    style={{ background: "radial-gradient(circle, var(--primary-glow) 0%, transparent 70%)" }}
                 />
                 <div
+                    className="absolute w-[500px] h-[500px] rounded-full -bottom-[80px] -right-[80px]"
                     style={{
-                        position: "absolute",
-                        width: "500px",
-                        height: "500px",
-                        borderRadius: "50%",
-                        background:
-                            "radial-gradient(circle, rgba(108,99,255,0.10) 0%, transparent 70%)",
-                        bottom: "-80px",
-                        right: "-80px",
+                        background: "radial-gradient(circle, rgba(108,99,255,0.10) 0%, transparent 70%)",
                         animation: "float 8s ease-in-out infinite reverse",
                     }}
                 />
             </div>
 
             {/* Card */}
-            <div
-                className="glass animate-fade-up"
-                style={{
-                    width: "100%",
-                    maxWidth: "420px",
-                    borderRadius: "24px",
-                    padding: "48px 40px",
-                    position: "relative",
-                    zIndex: 1,
-                }}
-            >
+            <div className="glass animate-fade-up w-full max-w-[420px] rounded-3xl px-10 py-12 relative z-[1]">
                 {/* Logo mark */}
-                <div style={{ textAlign: "center", marginBottom: "36px" }}>
+                <div className="text-center mb-9">
                     <div
-                        style={{
-                            width: "64px",
-                            height: "64px",
-                            borderRadius: "18px",
-                            background: "linear-gradient(135deg, #ff3b5c, #6c63ff)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            margin: "0 auto 20px",
-                            fontSize: "28px",
-                            boxShadow: "0 8px 32px var(--primary-glow)",
-                            animation: "pulse-glow 3s ease-in-out infinite",
-                        }}
+                        className="w-16 h-16 rounded-[18px] bg-gradient-to-br from-[#ff3b5c] to-[#6c63ff] flex items-center justify-center mx-auto mb-5 text-[28px]"
+                        style={{ boxShadow: "0 8px 32px var(--primary-glow)", animation: "pulse-glow 3s ease-in-out infinite" }}
                     >
                         🎬
                     </div>
 
-                    <h1
-                        style={{
-                            fontSize: "28px",
-                            fontWeight: 800,
-                            letterSpacing: "-0.5px",
-                            marginBottom: "8px",
-                        }}
-                    >
+                    <h1 className="text-[28px] font-extrabold tracking-tight mb-2">
                         <span className="gradient-text">Manage Me</span>
                     </h1>
 
-                    <p
-                        style={{
-                            color: "var(--muted)",
-                            fontSize: "14px",
-                            lineHeight: 1.6,
-                        }}
-                    >
-                        Schedule YouTube videos & Shorts to publish
+                    <p className="text-[var(--muted)] text-sm leading-relaxed">
+                        Schedule YouTube videos &amp; Shorts to publish
                         <br />
                         automatically at the perfect time.
                     </p>
                 </div>
 
                 {/* Divider */}
-                <div
-                    style={{
-                        height: "1px",
-                        background: "var(--border)",
-                        marginBottom: "28px",
-                    }}
-                />
+                <div className="h-px bg-[var(--border)] mb-7" />
 
                 {/* Sign in button */}
                 <button
@@ -132,55 +60,23 @@ export default function LoginPage() {
                     disabled={loading}
                     style={{ opacity: loading ? 0.7 : 1 }}
                 >
-                    {loading ? (
-                        <LoadingSpinner />
-                    ) : (
-                        <GoogleIcon />
-                    )}
+                    {loading ? <LoadingSpinner /> : <GoogleIcon />}
                     {loading ? "Connecting…" : "Continue with Google"}
                 </button>
 
                 {/* Info note */}
-                <p
-                    style={{
-                        marginTop: "20px",
-                        color: "var(--muted)",
-                        fontSize: "12px",
-                        textAlign: "center",
-                        lineHeight: 1.7,
-                    }}
-                >
+                <p className="mt-5 text-[var(--muted)] text-xs text-center leading-relaxed">
                     We'll ask permission to upload videos to your
                     <br />
                     YouTube channel on your behalf.
                 </p>
 
                 {/* Feature pills */}
-                <div
-                    style={{
-                        display: "flex",
-                        gap: "8px",
-                        justifyContent: "center",
-                        flexWrap: "wrap",
-                        marginTop: "28px",
-                    }}
-                >
-                    {[
-                        "📹 Normal Videos",
-                        "🩳 Shorts",
-                        "📅 Scheduled Uploads",
-                    ].map((f) => (
+                <div className="flex gap-2 justify-center flex-wrap mt-7">
+                    {["📹 Normal Videos", "🩳 Shorts", "📅 Scheduled Uploads"].map((f) => (
                         <span
                             key={f}
-                            style={{
-                                padding: "5px 12px",
-                                borderRadius: "100px",
-                                background: "var(--surface-2)",
-                                border: "1px solid var(--border)",
-                                fontSize: "11px",
-                                color: "var(--muted)",
-                                fontWeight: 500,
-                            }}
+                            className="px-3 py-[5px] rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-[11px] text-[var(--muted)] font-medium"
                         >
                             {f}
                         </span>

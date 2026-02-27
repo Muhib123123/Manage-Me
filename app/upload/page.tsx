@@ -1,40 +1,244 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { UploadDropzone } from "@/lib/uploadthing";
+import { useUpload } from "@/contexts/UploadContext";
 
 type UploadStatus = "idle" | "saving" | "done" | "error";
 
+/* ─── Helpers ─────────────────────────────────────── */
+function formatSize(bytes: number) {
+    if (!bytes) return "";
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const inputCls =
+    "w-full px-4 py-3 rounded-xl border border-[var(--border-solid)] bg-[var(--surface)] " +
+    "text-[var(--text)] text-sm outline-none transition-all duration-150 " +
+    "focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 " +
+    "placeholder:text-[var(--muted)]";
+
+/* ─── Sub-component: progress + preview card ─────── */
+function UploadedMediaCard({
+    kind,
+    url,
+    fileName,
+    fileSize,
+    progress,
+    previewFrame,
+    onRemove,
+    videoRef,
+    onVideoLoaded,
+}: {
+    kind: "video" | "image";
+    url: string;
+    fileName: string;
+    fileSize: number;
+    progress: number;
+    previewFrame?: string;
+    onRemove: () => void;
+    videoRef?: React.RefObject<HTMLVideoElement | null>;
+    onVideoLoaded?: () => void;
+}) {
+    return (
+        <div className="rounded-2xl overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
+            {/* Preview */}
+            <div className="relative aspect-video bg-slate-900">
+                {kind === "video" ? (
+                    previewFrame ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={previewFrame} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                        <video
+                            ref={videoRef}
+                            src={url}
+                            preload="metadata"
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                            onLoadedMetadata={onVideoLoaded}
+                        />
+                    )
+                ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={url} alt="Thumbnail" className="w-full h-full object-cover" />
+                )}
+
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+
+                {/* Bottom info bar */}
+                <div className="absolute bottom-0 left-0 right-0 px-3 py-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[11px] font-semibold text-white/90">
+                            {kind === "video" ? "✅ Video ready" : "✅ Thumbnail ready"}
+                        </span>
+                        {fileSize > 0 && (
+                            <span className="text-[10px] text-white/60 font-medium bg-black/30 px-1.5 py-0.5 rounded-md">
+                                {formatSize(fileSize)}
+                            </span>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onRemove}
+                        className="text-white/70 hover:text-white text-[11px] font-medium bg-black/30 hover:bg-black/50 px-2 py-0.5 rounded-lg transition-all shrink-0"
+                    >
+                        Remove
+                    </button>
+                </div>
+            </div>
+
+            {/* Filename */}
+            <div className="px-4 py-2.5 flex items-center gap-2 border-t border-[var(--border-solid)]">
+                <span className="text-base">{kind === "video" ? "🎬" : "🖼️"}</span>
+                <p className="text-xs text-[var(--muted)] truncate flex-1">{fileName}</p>
+            </div>
+        </div>
+    );
+}
+
+/* ─── Sub-component: upload zone with progress ───── */
+function UploadZone({
+    endpoint,
+    label,
+    hint,
+    progress,
+    uploading,
+    fileSize,
+    onBeforeUpload,
+    onProgress,
+    onComplete,
+    onError,
+}: {
+    endpoint: "videoUploader" | "thumbnailUploader";
+    label: string;
+    hint: string;
+    progress: number;
+    uploading: boolean;
+    fileSize: number;
+    onBeforeUpload: (files: File[]) => File[];
+    onProgress: (p: number) => void;
+    onComplete: (url: string) => void;
+    onError: (msg: string) => void;
+}) {
+    return (
+        <div className="flex flex-col gap-2">
+            {uploading && (
+                <div className="rounded-2xl border border-[var(--border-solid)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)]">
+                    {/* Uploading state */}
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                            <span className="text-sm font-semibold text-[var(--text)]">Uploading…</span>
+                        </div>
+                        <span className="text-sm font-bold text-blue-600">{progress}%</span>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="w-full h-2 rounded-full bg-[var(--surface-2)] overflow-hidden">
+                        <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 ease-out"
+                            style={{ width: `${progress}%` }}
+                        />
+                    </div>
+
+                    {fileSize > 0 && (
+                        <p className="text-xs text-[var(--muted)] mt-2">
+                            File size: <span className="font-medium text-[var(--text)]">{formatSize(fileSize)}</span>
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {!uploading && (
+                <UploadDropzone
+                    endpoint={endpoint}
+                    appearance={{
+                        button: { background: "var(--primary)", color: "white", cursor: "pointer" },
+                    }}
+                    onBeforeUploadBegin={(files) => {
+                        onBeforeUpload(files);
+                        return files;
+                    }}
+                    onUploadProgress={(p) => onProgress(Math.round(p))}
+                    onClientUploadComplete={(res) => {
+                        if (res?.[0]) onComplete(res[0].ufsUrl);
+                        onProgress(100);
+                    }}
+                    content={{ label, allowedContent: hint }}
+                    onUploadError={(err) => onError(err.message)}
+                />
+            )}
+        </div>
+    );
+}
+
+/* ─── Main Page ───────────────────────────────────── */
 export default function UploadPage() {
     const router = useRouter();
+    const { setIsUploading } = useUpload();
 
     const [videoType, setVideoType] = useState<"video" | "short">("video");
+
+    // Video upload state
     const [videoUrl, setVideoUrl] = useState("");
+    const [videoProgress, setVideoProgress] = useState(0);
+    const [videoUploading, setVideoUploading] = useState(false);
+    const [videoFileSize, setVideoFileSize] = useState(0);
+    const [videoFileName, setVideoFileName] = useState("");
+    const [videoPreviewFrame, setVideoPreviewFrame] = useState("");
+
+    // Thumbnail upload state
     const [thumbnailUrl, setThumbnailUrl] = useState("");
+    const [thumbnailProgress, setThumbnailProgress] = useState(0);
+    const [thumbnailUploading, setThumbnailUploading] = useState(false);
+    const [thumbnailFileSize, setThumbnailFileSize] = useState(0);
+    const [thumbnailFileName, setThumbnailFileName] = useState("");
+
+    // Form state
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [tags, setTags] = useState("");
     const [privacy, setPrivacy] = useState("public");
     const [scheduledDate, setScheduledDate] = useState("");
     const [scheduledTime, setScheduledTime] = useState("");
-    const [status, setStatus] = useState<UploadStatus>("idle");
+    const [submitStatus, setSubmitStatus] = useState<UploadStatus>("idle");
     const [error, setError] = useState("");
+
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    const captureVideoFrame = () => {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        if (!video || !canvas) return;
+        try {
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 360;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                setVideoPreviewFrame(canvas.toDataURL("image/jpeg", 0.75));
+            }
+        } catch {
+            // CORS may block — video element still shows the frame natively
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-
         if (!videoUrl) { setError("Please upload a video file."); return; }
         if (!title.trim()) { setError("Please enter a video title."); return; }
         if (!scheduledDate || !scheduledTime) { setError("Please set a scheduled date and time."); return; }
-
         const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
         if (new Date(scheduledAt) <= new Date()) { setError("Scheduled time must be in the future."); return; }
 
         try {
-            setStatus("saving");
-
+            setSubmitStatus("saving");
             const res = await fetch("/api/videos", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -42,285 +246,356 @@ export default function UploadPage() {
                     title: title.trim(),
                     description: description.trim(),
                     tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-                    privacy,
-                    videoType,
+                    privacy, videoType,
                     storageUrl: videoUrl,
                     thumbnailUrl: thumbnailUrl || null,
                     scheduledAt,
                 }),
             });
-
             if (!res.ok) throw new Error("Failed to save video");
-
-            setStatus("done");
+            setSubmitStatus("done");
             setTimeout(() => router.push("/dashboard"), 1500);
         } catch (err: unknown) {
-            setStatus("error");
+            setSubmitStatus("error");
             setError(err instanceof Error ? err.message : "Something went wrong.");
         }
     };
 
     return (
-        <div style={{ maxWidth: "800px", margin: "0 auto", paddingBottom: "60px" }}>
-            {/* Header */}
-            <div style={{ marginBottom: "40px", textAlign: "center" }}>
-                <h1 style={{ fontSize: "28px", fontWeight: 800, letterSpacing: "-0.5px", marginBottom: "8px" }}>
+        <div className="p-6">
+            {/* Hidden canvas for frame capture */}
+            <canvas ref={canvasRef} className="hidden" />
+
+            {/* Page header */}
+            <div className="mb-6 lg:mb-8">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[var(--text)] tracking-tight mb-1">
                     Schedule a Video
                 </h1>
-                <p style={{ color: "var(--muted)", fontSize: "15px" }}>
-                    Upload your video and set the exact time to publish to YouTube.
+                <p className="text-[var(--muted)] text-sm lg:text-base">
+                    Upload your content and set the exact time it goes live on YouTube.
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ background: "var(--surface)", padding: "32px", borderRadius: "20px", border: "1px solid var(--border)" }}>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 lg:gap-6">
 
-                {/* ── Video Type Toggle ─────────────────────── */}
-                <Field label="Video Type">
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+                {/* ── Card: Video Type ───────────────────── */}
+                <FormCard title="Video Type">
+                    <div className="grid grid-cols-2 gap-3">
                         {([
-                            { value: "video", label: "📹 Normal Video", desc: "Standard YouTube video" },
-                            { value: "short", label: "🩳 YouTube Short", desc: "Vertical · max 60s" },
-                        ] as const).map(({ value, label, desc }) => (
+                            { value: "video", emoji: "📹", label: "Normal Video", desc: "Standard YouTube video" },
+                            { value: "short", emoji: "🩳", label: "YouTube Short", desc: "Vertical · max 60s" },
+                        ] as const).map(({ value, emoji, label, desc }) => (
                             <button
                                 key={value}
                                 type="button"
                                 onClick={() => setVideoType(value)}
-                                style={{
-                                    padding: "16px", borderRadius: "14px",
-                                    border: videoType === value ? "2px solid var(--primary)" : "2px solid transparent",
-                                    background: videoType === value ? "var(--primary-glow)" : "var(--surface-2)",
-                                    cursor: "pointer", textAlign: "left", transition: "all 0.2s",
-                                }}
+                                className={[
+                                    "flex flex-col gap-1 p-3 sm:p-4 rounded-xl text-left transition-all duration-150 border-2 cursor-pointer",
+                                    videoType === value
+                                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                                        : "border-[var(--border-solid)] bg-[var(--surface-2)] hover:border-slate-300 dark:hover:border-slate-600",
+                                ].join(" ")}
                             >
-                                <div style={{ fontWeight: 600, fontSize: "15px", color: "var(--text)", marginBottom: "4px" }}>{label}</div>
-                                <div style={{ fontSize: "13px", color: "var(--muted)" }}>{desc}</div>
+                                <span className="text-xl sm:text-2xl">{emoji}</span>
+                                <div className={`font-semibold text-xs sm:text-sm ${videoType === value ? "text-blue-700 dark:text-blue-400" : "text-[var(--text)]"}`}>
+                                    {label}
+                                </div>
+                                <div className="text-[11px] sm:text-xs text-[var(--muted)]">{desc}</div>
                             </button>
                         ))}
                     </div>
-                </Field>
+                </FormCard>
 
-                {/* ── File Uploads (Video & Thumbnail) ────────────────── */}
-                <div style={{
-                    display: "grid",
-                    gridTemplateColumns: videoType === "video" ? "repeat(auto-fit, minmax(280px, 1fr))" : "1fr",
-                    gap: "24px",
-                    marginBottom: "24px"
-                }}>
-                    {/* Video File */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>
-                            Video File *
-                        </label>
-                        {videoUrl ? (
-                            <div style={{
-                                padding: "20px", borderRadius: "14px",
-                                background: "rgba(34,197,94,0.08)", border: "2px solid rgba(34,197,94,0.3)",
-                                display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px",
-                                flex: 1
-                            }}>
-                                <div>
-                                    <p style={{ fontWeight: 600, fontSize: "15px", color: "#22c55e" }}>✅ Video uploaded</p>
-                                    <p style={{ fontSize: "13px", color: "var(--muted)", marginTop: "4px", wordBreak: "break-all" }}>
-                                        {videoUrl.split("/").pop()}
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => setVideoUrl("")}
-                                    style={{ color: "var(--muted)", background: "var(--surface)", border: "1px solid var(--border)", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600, transition: "0.2s" }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderColor = "var(--text)"; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted)"; e.currentTarget.style.borderColor = "var(--border)"; }}
+                {/* ── YouTube Verification Notice (Normal Video only) ── */}
+                {videoType === "video" && (
+                    <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900">
+                        <span className="text-lg shrink-0 mt-0.5">ℹ️</span>
+                        <div>
+                            <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 mb-0.5">
+                                YouTube account verification required for videos &gt; 15 minutes
+                            </p>
+                            <p className="text-xs text-blue-700 dark:text-blue-400">
+                                This applies to <strong>every YouTube account</strong> — it&apos;s a YouTube rule, not an app rule.
+                                If you or your clients want to upload long videos, each YouTube account must be phone-verified at{" "}
+                                <a
+                                    href="https://www.youtube.com/verify"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline font-medium hover:text-blue-900 dark:hover:text-blue-200"
                                 >
-                                    Remove
-                                </button>
-                            </div>
-                        ) : (
-                            <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                                <UploadDropzone
-                                    endpoint="videoUploader"
-                                    appearance={{
-                                        button: {
-                                            background: "var(--primary)",
-                                            color: "white",
-                                            cursor: "pointer",
-                                        }
+                                    youtube.com/verify
+                                </a>
+                                . Verification is free and takes 2 minutes.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Card: Upload Files ─────────────────── */}
+                <FormCard title="Upload Files">
+                    <div className={`grid gap-4 lg:gap-6 ${videoType === "video" ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 max-w-md"}`}>
+
+                        {/* Video file */}
+                        <div className="flex flex-col gap-2">
+                            <SectionLabel text="Video File" required />
+                            {videoUrl ? (
+                                <UploadedMediaCard
+                                    kind="video"
+                                    url={videoUrl}
+                                    fileName={videoFileName}
+                                    fileSize={videoFileSize}
+                                    progress={videoProgress}
+                                    previewFrame={videoPreviewFrame}
+                                    videoRef={videoRef}
+                                    onVideoLoaded={captureVideoFrame}
+                                    onRemove={() => {
+                                        setVideoUrl(""); setVideoProgress(0);
+                                        setVideoFileSize(0); setVideoFileName("");
+                                        setVideoPreviewFrame("");
+                                        setIsUploading(false);
                                     }}
-                                    onClientUploadComplete={(res) => {
-                                        if (res?.[0]) setVideoUrl(res[0].ufsUrl);
-                                    }}
-                                    content={{
-                                        label: "Select Video File",
-                                        button: "Upload Video",
-                                        allowedContent: "MP4, MOV, AVI — max 2GB",
-                                    }}
-                                    onUploadError={(err) => setError(err.message)}
                                 />
+                            ) : (
+                                <UploadZone
+                                    endpoint="videoUploader"
+                                    label="Drop video here or click to browse"
+                                    hint="MP4, MOV, AVI — max 2GB"
+                                    progress={videoProgress}
+                                    uploading={videoUploading}
+                                    fileSize={videoFileSize}
+                                    onBeforeUpload={(files) => {
+                                        const f = files[0];
+                                        if (f) {
+                                            setVideoFileSize(f.size);
+                                            setVideoFileName(f.name);
+                                            setVideoUploading(true);
+                                            setVideoProgress(0);
+                                            setIsUploading(true);
+                                        }
+                                        return files;
+                                    }}
+                                    onProgress={(p) => setVideoProgress(p)}
+                                    onComplete={(url) => {
+                                        setVideoUrl(url);
+                                        setVideoUploading(false);
+                                        setIsUploading(false);
+                                    }}
+                                    onError={(msg) => {
+                                        setError(msg);
+                                        setVideoUploading(false);
+                                        setIsUploading(false);
+                                    }}
+                                />
+                            )}
+                        </div>
+
+                        {/* Thumbnail — Normal video only */}
+                        {videoType === "video" && (
+                            <div className="flex flex-col gap-2">
+                                <SectionLabel text="Thumbnail" optional />
+                                {thumbnailUrl ? (
+                                    <UploadedMediaCard
+                                        kind="image"
+                                        url={thumbnailUrl}
+                                        fileName={thumbnailFileName}
+                                        fileSize={thumbnailFileSize}
+                                        progress={thumbnailProgress}
+                                        onRemove={() => {
+                                            setThumbnailUrl(""); setThumbnailProgress(0);
+                                            setThumbnailFileSize(0); setThumbnailFileName("");
+                                            setIsUploading(false);
+                                        }}
+                                    />
+                                ) : (
+                                    <UploadZone
+                                        endpoint="thumbnailUploader"
+                                        label="Drop thumbnail here or click to browse"
+                                        hint="JPG, PNG — max 8MB"
+                                        progress={thumbnailProgress}
+                                        uploading={thumbnailUploading}
+                                        fileSize={thumbnailFileSize}
+                                        onBeforeUpload={(files) => {
+                                            const f = files[0];
+                                            if (f) {
+                                                setThumbnailFileSize(f.size);
+                                                setThumbnailFileName(f.name);
+                                                setThumbnailUploading(true);
+                                                setThumbnailProgress(0);
+                                                setIsUploading(true);
+                                            }
+                                            return files;
+                                        }}
+                                        onProgress={(p) => setThumbnailProgress(p)}
+                                        onComplete={(url) => {
+                                            setThumbnailUrl(url);
+                                            setThumbnailUploading(false);
+                                            setIsUploading(false);
+                                        }}
+                                        onError={(msg) => {
+                                            setError(msg);
+                                            setThumbnailUploading(false);
+                                            setIsUploading(false);
+                                        }}
+                                    />
+                                )}
+                            </div>
+                        )}
+
+                        {/* Shorts info note */}
+                        {videoType === "short" && (
+                            <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900 col-span-full">
+                                <span className="text-lg shrink-0">💡</span>
+                                <p className="text-xs text-amber-800 dark:text-amber-300">
+                                    YouTube Shorts use an auto-generated thumbnail — no custom thumbnail needed.
+                                </p>
                             </div>
                         )}
                     </div>
+                </FormCard>
 
-                    {/* Thumbnail (Normal Video only) */}
-                    {videoType === "video" && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                            <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>
-                                Thumbnail (optional)
-                            </label>
-                            {thumbnailUrl ? (
-                                <div style={{
-                                    padding: "16px 20px", borderRadius: "14px",
-                                    background: "rgba(34,197,94,0.08)", border: "2px solid rgba(34,197,94,0.3)",
-                                    display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px",
-                                    flex: 1
-                                }}>
-                                    <p style={{ fontWeight: 600, fontSize: "14px", color: "#22c55e" }}>✅ Thumbnail uploaded</p>
-                                    <button
-                                        type="button"
-                                        onClick={() => setThumbnailUrl("")}
-                                        style={{ color: "var(--muted)", background: "var(--surface)", border: "1px solid var(--border)", padding: "8px 16px", borderRadius: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 600, transition: "0.2s" }}
-                                        onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderColor = "var(--text)"; }}
-                                        onMouseLeave={(e) => { e.currentTarget.style.color = "var(--muted)"; e.currentTarget.style.borderColor = "var(--border)"; }}
-                                    >
-                                        Remove
-                                    </button>
-                                </div>
-                            ) : (
-                                <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                                    <UploadDropzone
-                                        endpoint="thumbnailUploader"
-                                        appearance={{
-                                            button: {
-                                                background: "var(--primary)",
-                                                color: "white",
-                                                cursor: "pointer",
-                                            }
-                                        }}
-                                        onClientUploadComplete={(res) => {
-                                            if (res?.[0]) setThumbnailUrl(res[0].ufsUrl);
-                                        }}
-                                        content={{
-                                            label: "Select Thumbnail Image",
-                                            button: "Upload Image",
-                                            allowedContent: "JPG, PNG — max 8MB",
-                                        }}
-                                        onUploadError={(err) => setError(err.message)}
-                                    />
-                                </div>
-                            )}
+                {/* ── Card: Video Details ────────────────── */}
+                <FormCard title="Video Details">
+                    <div className="flex flex-col gap-4">
+                        {/* Title */}
+                        <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                                <SectionLabel text="Title" required />
+                                <span className="text-xs text-[var(--muted)]">{title.length}/100</span>
+                            </div>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                maxLength={100}
+                                placeholder="Enter your video title…"
+                                className={inputCls}
+                            />
                         </div>
-                    )}
-                </div>
 
-                {/* ── Title ─────────────────────────────────── */}
-                <Field label="Title *">
-                    <input
-                        type="text" value={title} onChange={(e) => setTitle(e.target.value)}
-                        maxLength={100} placeholder="Enter your video title…" style={inputStyle}
-                        onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-                        onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-                    />
-                    <p style={{ color: "var(--muted)", fontSize: "12px", textAlign: "right", marginTop: "-4px" }}>
-                        {title.length}/100
+                        {/* Description */}
+                        <div className="flex flex-col gap-1.5">
+                            <SectionLabel
+                                text={videoType === "short" ? "Description / Bio" : "Description"}
+                                hint={videoType === "short" ? "Supports #hashtags" : undefined}
+                            />
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                maxLength={5000}
+                                rows={4}
+                                placeholder="Describe your video…"
+                                className={`${inputCls} resize-y font-[inherit]`}
+                            />
+                        </div>
+
+                        {/* Tags + Privacy — 2 cols on md+ */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-1.5">
+                                <SectionLabel text="Tags" hint="comma-separated" />
+                                <input
+                                    type="text"
+                                    value={tags}
+                                    onChange={(e) => setTags(e.target.value)}
+                                    placeholder="gaming, tutorial, vlog"
+                                    className={inputCls}
+                                />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <SectionLabel text="Privacy" />
+                                <select
+                                    value={privacy}
+                                    onChange={(e) => setPrivacy(e.target.value)}
+                                    className={`${inputCls} cursor-pointer`}
+                                >
+                                    <option value="public">🌍 Public</option>
+                                    <option value="unlisted">🔗 Unlisted</option>
+                                    <option value="private">🔒 Private</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </FormCard>
+
+                {/* ── Card: Schedule ─────────────────────── */}
+                <FormCard title="Schedule">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                            <SectionLabel text="Date" required />
+                            <input
+                                type="date"
+                                value={scheduledDate}
+                                onChange={(e) => setScheduledDate(e.target.value)}
+                                min={new Date().toISOString().split("T")[0]}
+                                className={`${inputCls} cursor-pointer`}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                            <SectionLabel text="Time" required />
+                            <input
+                                type="time"
+                                value={scheduledTime}
+                                onChange={(e) => setScheduledTime(e.target.value)}
+                                className={`${inputCls} cursor-pointer`}
+                            />
+                        </div>
+                    </div>
+                    <p className="text-xs text-[var(--muted)] mt-3 flex items-center gap-1">
+                        <span>🕐</span> Uses your local browser timezone.
                     </p>
-                </Field>
+                </FormCard>
 
-                {/* ── Description ───────────────────────────── */}
-                <Field label={videoType === "short" ? "Description / Bio (supports #hashtags)" : "Description"}>
-                    <textarea
-                        value={description} onChange={(e) => setDescription(e.target.value)}
-                        maxLength={5000} rows={5} placeholder="Describe your video…"
-                        style={{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
-                        onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-                        onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-                    />
-                </Field>
-
-                {/* ── Tags ──────────────────────────────────── */}
-                <Field label="Tags (comma-separated)">
-                    <input
-                        type="text" value={tags} onChange={(e) => setTags(e.target.value)}
-                        placeholder="gaming, tutorial, vlog" style={inputStyle}
-                        onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-                        onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-                    />
-                </Field>
-
-                {/* ── Privacy ───────────────────────────────── */}
-                <Field label="Privacy">
-                    <select value={privacy} onChange={(e) => setPrivacy(e.target.value)}
-                        style={{ ...inputStyle, cursor: "pointer", appearance: "none", backgroundImage: "url('data:image/svg+xml;utf8,<svg fill=\"gray\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>')", backgroundRepeat: "no-repeat", backgroundPositionX: "100%", backgroundPositionY: "50%" }}>
-                        <option value="public">🌍 Public (Anyone can watch)</option>
-                        <option value="unlisted">🔗 Unlisted (Anyone with link can watch)</option>
-                        <option value="private">🔒 Private (Only you can watch)</option>
-                    </select>
-                </Field>
-
-                {/* ── Schedule ──────────────────────────────── */}
-                <Field label="Scheduled Date & Time *">
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-                        <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)}
-                            min={new Date().toISOString().split("T")[0]} style={{ ...inputStyle, cursor: "pointer" }}
-                            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-                            onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-                        />
-                        <input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)}
-                            style={{ ...inputStyle, cursor: "pointer" }}
-                            onFocus={(e) => e.target.style.borderColor = "var(--primary)"}
-                            onBlur={(e) => e.target.style.borderColor = "var(--border)"}
-                        />
-                    </div>
-                    <p style={{ color: "var(--muted)", fontSize: "12px" }}>Upload uses your local browser timezone.</p>
-                </Field>
-
-                {/* ── Error ─────────────────────────────────── */}
+                {/* ── Error banner ───────────────────────── */}
                 {error && (
-                    <div style={{
-                        padding: "16px", borderRadius: "12px",
-                        background: "rgba(255,59,92,0.1)", border: "1px solid rgba(255,59,92,0.3)",
-                        color: "#ff3b5c", fontSize: "14px", marginBottom: "24px", fontWeight: 500
-                    }}>
-                        ⚠ {error}
+                    <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-center gap-2 dark:bg-red-950/30 dark:border-red-900 dark:text-red-400">
+                        <span>⚠️</span> {error}
                     </div>
                 )}
 
-                {/* ── Success ───────────────────────────────── */}
-                {status === "done" && (
-                    <div style={{
-                        padding: "16px", borderRadius: "12px",
-                        background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)",
-                        color: "#22c55e", fontSize: "14px", marginBottom: "24px", fontWeight: 500
-                    }}>
-                        ✅ Video successfully scheduled! Redirecting to dashboard…
+                {/* ── Success banner ─────────────────────── */}
+                {submitStatus === "done" && (
+                    <div className="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium flex items-center gap-2 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400">
+                        <span>✅</span> Video scheduled! Redirecting to dashboard…
                     </div>
                 )}
 
-                {/* ── Submit ────────────────────────────────── */}
+                {/* ── Submit ─────────────────────────────── */}
                 <button
-                    type="submit" className="btn-primary"
-                    disabled={status === "saving"}
-                    style={{ width: "100%", opacity: status === "saving" ? 0.7 : 1, fontSize: "16px", padding: "16px", marginTop: "16px", cursor: status === "saving" ? "not-allowed" : "pointer" }}
+                    type="submit"
+                    disabled={submitStatus === "saving" || videoUploading || thumbnailUploading}
+                    className="btn-primary w-full py-3.5 text-sm sm:text-base justify-center rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                    {status === "saving" ? "Saving Schedule…" : "🚀 Schedule Video"}
+                    {submitStatus === "saving"
+                        ? "⏳ Saving…"
+                        : videoUploading || thumbnailUploading
+                            ? "⬆ Upload in progress…"
+                            : "🚀 Schedule Video"}
                 </button>
             </form>
         </div>
     );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/* ─── Tiny helper sub-components ─────────────────── */
+function FormCard({ title, children }: { title: string; children: React.ReactNode }) {
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
-            <label style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>
-                {label}
-            </label>
-            {children}
+        <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border-solid)] shadow-[var(--shadow-sm)] overflow-hidden">
+            <div className="px-4 sm:px-5 py-3 border-b border-[var(--border-solid)] bg-[var(--surface-2)]">
+                <h2 className="text-sm font-semibold text-[var(--text)]">{title}</h2>
+            </div>
+            <div className="p-4 sm:p-5">{children}</div>
         </div>
     );
 }
 
-const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "14px 16px",
-    borderRadius: "12px", border: "1px solid var(--border)",
-    background: "var(--surface-2)", color: "var(--text)",
-    fontSize: "15px", outline: "none", boxSizing: "border-box",
-    transition: "border-color 0.2s ease, box-shadow 0.2s ease"
-};
+function SectionLabel({ text, required, optional, hint }: {
+    text: string; required?: boolean; optional?: boolean; hint?: string;
+}) {
+    return (
+        <label className="flex items-center gap-1.5 text-xs font-semibold text-[var(--muted)] uppercase tracking-wide">
+            {text}
+            {required && <span className="text-red-500 normal-case font-bold">*</span>}
+            {optional && <span className="normal-case font-normal text-[var(--muted)]">(optional)</span>}
+            {hint && <span className="normal-case font-normal">· {hint}</span>}
+        </label>
+    );
+}

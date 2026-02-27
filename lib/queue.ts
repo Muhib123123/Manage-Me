@@ -1,6 +1,6 @@
 import { Queue, Worker } from "bullmq";
 import IORedis from "ioredis";
-import { uploadVideoToYouTube } from "./youtube";
+import { uploadVideoToYouTube, translateYouTubeError } from "./youtube";
 import { prisma } from "./prisma";
 
 // Use Upstash Redis URL from env
@@ -55,7 +55,7 @@ if (!globalForWorker.videoWorker && redisUrl) {
                 // Mark as failed with error message
                 await prisma.video.update({
                     where: { id: videoId },
-                    data: { status: "FAILED", errorMessage: error.message || "Unknown error" },
+                    data: { status: "FAILED", errorMessage: translateYouTubeError(error) },
                 });
                 console.error(`❌ Job ${job.id}: Video ${videoId} upload failed:`, error);
                 throw error; // Re-throw so BullMQ marks job as failed
