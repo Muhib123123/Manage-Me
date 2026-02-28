@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { UploadDropzone } from "@/lib/uploadthing";
 import { useUpload } from "@/contexts/UploadContext";
@@ -43,7 +43,7 @@ function UploadedMediaCard({
     onVideoLoaded?: () => void;
 }) {
     return (
-        <div className="rounded-2xl overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
+        <div className="rounded-2xl w-[300px] lg:w-[400px] overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)]">
             {/* Preview */}
             <div className="relative aspect-video bg-slate-900">
                 {kind === "video" ? (
@@ -124,10 +124,55 @@ function UploadZone({
     onComplete: (url: string) => void;
     onError: (msg: string) => void;
 }) {
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    const getBtn = () =>
+        wrapperRef.current?.querySelector("button") as HTMLElement | null;
+
+    const showBtn = () => { const b = getBtn(); if (b) b.style.display = "block"; };
+    const hideBtn = () => { const b = getBtn(); if (b) b.style.display = "none"; };
+
+    // On mount: hide button & attach a native change listener to the file input.
+    // This fires the instant the user closes the OS picker with a file selected —
+    // more reliable than onBeforeUploadBegin which runs after uploadthing processes
+    // the selection and may get overwritten by its internal re-renders.
+    useEffect(() => {
+        const wrapper = wrapperRef.current;
+        if (!wrapper) return;
+
+        // Small delay to let uploadthing render its elements first
+        const timer = setTimeout(() => {
+            hideBtn();
+
+            const input = wrapper.querySelector('input[type="file"]') as HTMLInputElement | null;
+            if (!input) return;
+
+            const handleChange = () => {
+                if (input.files && input.files.length > 0) {
+                    showBtn();
+                } else {
+                    hideBtn();
+                }
+            };
+
+            input.addEventListener("change", handleChange);
+            // Cleanup stored so we can remove it on unmount
+            (wrapper as HTMLDivElement & { _cleanup?: () => void })._cleanup = () =>
+                input.removeEventListener("change", handleChange);
+        }, 100);
+
+        return () => {
+            clearTimeout(timer);
+            const cleanup = (wrapper as HTMLDivElement & { _cleanup?: () => void })._cleanup;
+            if (cleanup) cleanup();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     return (
         <div className="flex flex-col gap-2">
             {uploading && (
-                <div className="rounded-2xl border border-[var(--border-solid)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)]">
+                <div className="rounded-2xl w-[300px] lg:w-[400px] border border-[var(--border-solid)] bg-[var(--surface)] p-5 shadow-[var(--shadow-sm)] ">
                     {/* Uploading state */}
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
@@ -154,30 +199,37 @@ function UploadZone({
             )}
 
             {!uploading && (
-                <UploadDropzone
-                    endpoint={endpoint}
-                    appearance={{
-                        button: { background: "var(--primary)", color: "white", cursor: "pointer", padding: "10px", marginTop: "20px"},
-                        container: { display: "flex", justifyContent: "center", alignItems: "center", width: "300px" },
-                        allowedContent: { marginTop: "20px" },
-                        uploadIcon: { cursor: "pointer" },
-                    }}
-                    onBeforeUploadBegin={(files) => {
-                        onBeforeUpload(files);
-                        return files;
-                    }}
-                    onUploadProgress={(p) => onProgress(Math.round(p))}
-                    onClientUploadComplete={(res) => {
-                        if (res?.[0]) onComplete(res[0].ufsUrl);
-                        onProgress(100);
-                    }}
-                    content={{ label, allowedContent: hint }}
-                    onUploadError={(err) => onError(err.message)}
-                />
+                <div ref={wrapperRef}>
+                    <UploadDropzone
+                        endpoint={endpoint}
+                        appearance={{
+                            button: { background: "var(--primary)", color: "white", cursor: "pointer", padding: "10px", marginTop: "20px" },
+                            container: { display: "flex", justifyContent: "center", alignItems: "center", width: "300px" },
+                            allowedContent: { marginTop: "20px" },
+                            uploadIcon: { cursor: "pointer" },
+                        }}
+                        onBeforeUploadBegin={(files) => {
+                            onBeforeUpload(files);
+                            return files;
+                        }}
+                        onUploadProgress={(p) => onProgress(Math.round(p))}
+                        onClientUploadComplete={(res) => {
+                            if (res?.[0]) onComplete(res[0].ufsUrl);
+                            onProgress(100);
+                            hideBtn();
+                        }}
+                        content={{ label, allowedContent: hint }}
+                        onUploadError={(err) => {
+                            onError(err.message);
+                            hideBtn();
+                        }}
+                    />
+                </div>
             )}
         </div>
     );
 }
+
 
 /* ─── Main Page ───────────────────────────────────── */
 export default function UploadPage() {
