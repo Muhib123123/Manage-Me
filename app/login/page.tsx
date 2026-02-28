@@ -13,7 +13,7 @@ export default function LoginPage() {
 
     return (
         <main className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
-            {/* Background blobs */}
+            {/* Background blobs
             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 <div
                     className="absolute w-[600px] h-[600px] rounded-full -top-[100px] -left-[100px] animate-float"
@@ -26,7 +26,7 @@ export default function LoginPage() {
                         animation: "float 8s ease-in-out infinite reverse",
                     }}
                 />
-            </div>
+            </div> */}
 
             {/* Card */}
             <div className="glass animate-fade-up w-full max-w-[420px] rounded-3xl px-10 py-12 relative z-[1]">

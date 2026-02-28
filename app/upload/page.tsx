@@ -157,7 +157,10 @@ function UploadZone({
                 <UploadDropzone
                     endpoint={endpoint}
                     appearance={{
-                        button: { background: "var(--primary)", color: "white", cursor: "pointer" },
+                        button: { background: "var(--primary)", color: "white", cursor: "pointer", padding: "10px", marginTop: "20px"},
+                        container: { display: "flex", justifyContent: "center", alignItems: "center", width: "300px" },
+                        allowedContent: { marginTop: "20px" },
+                        uploadIcon: { cursor: "pointer" },
                     }}
                     onBeforeUploadBegin={(files) => {
                         onBeforeUpload(files);
@@ -311,12 +314,12 @@ export default function UploadPage() {
                     <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-900">
                         <span className="text-lg shrink-0 mt-0.5">ℹ️</span>
                         <div>
-                            <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 mb-0.5">
-                                YouTube account verification required for videos &gt; 15 minutes
+                            <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 mb-0.5 lg:text-base">
+                                YouTube account verification required for videos more then 15 minutes
                             </p>
-                            <p className="text-xs text-blue-700 dark:text-blue-400">
-                                This applies to <strong>every YouTube account</strong> — it&apos;s a YouTube rule, not an app rule.
-                                If you or your clients want to upload long videos, each YouTube account must be phone-verified at{" "}
+                            <p className="text-xs text-blue-700 dark:text-blue-400 lg:text-base">
+                                This is a YouTube rule, not an app rule.
+                                If you want to upload long videos please verify your phone number at{" "}
                                 <a
                                     href="https://www.youtube.com/verify"
                                     target="_blank"
@@ -333,7 +336,7 @@ export default function UploadPage() {
 
                 {/* ── Card: Upload Files ─────────────────── */}
                 <FormCard title="Upload Files">
-                    <div className={`grid gap-4 lg:gap-6 ${videoType === "video" ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 max-w-md"}`}>
+                    <div className="flex justify-around items-center flex-wrap">
 
                         {/* Video file */}
                         <div className="flex flex-col gap-2">
