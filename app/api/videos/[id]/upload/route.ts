@@ -22,7 +22,7 @@ export async function POST(
     const { id } = await params;
 
     // Verify the video belongs to this user and is in a uploadable state
-    const video = await prisma.video.findFirst({
+    const video = await prisma.youtubePost.findFirst({
         where: { id, userId: session.user.id },
     });
 
@@ -32,7 +32,7 @@ export async function POST(
 
     if (video.status === "DONE") {
         return NextResponse.json(
-            { error: "Video already uploaded", youtubeUrl: video.youtubeUrl },
+            { error: "Video already uploaded", youtubeId: video.youtubeId },
             { status: 400 }
         );
     }
@@ -43,7 +43,7 @@ export async function POST(
 
     try {
         // Mark as uploading
-        await prisma.video.update({
+        await prisma.youtubePost.update({
             where: { id },
             data: { status: "UPLOADING" },
         });
@@ -53,12 +53,11 @@ export async function POST(
         const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
 
         // Mark as done
-        await prisma.video.update({
+        await prisma.youtubePost.update({
             where: { id },
             data: {
                 status: "DONE",
                 youtubeId: youtubeVideoId,
-                youtubeUrl,
             },
         });
 
@@ -67,7 +66,7 @@ export async function POST(
         const message = err instanceof Error ? err.message : "Unknown error";
 
         // Mark as failed
-        await prisma.video.update({
+        await prisma.youtubePost.update({
             where: { id },
             data: { status: "FAILED", errorMessage: message },
         });

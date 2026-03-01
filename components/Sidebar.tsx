@@ -5,9 +5,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useUpload } from "@/contexts/UploadContext";
 
-const nav = [
+type NavItem = { href: string; label: string; icon: string; disabled?: boolean };
+
+const navMain: NavItem[] = [
     { href: "/dashboard", label: "Dashboard", icon: "📊" },
-    { href: "/upload", label: "Schedule Video", icon: "➕" },
+    { href: "/dashboard/connect", label: "Connections", icon: "🔗" },
+];
+
+const navUpload: NavItem[] = [
+    { href: "/upload", label: "YouTube Upload", icon: "🎬" },
+    { href: "/upload/instagram", label: "Instagram Upload", icon: "📸" },
 ];
 
 interface SidebarProps {
@@ -66,12 +73,12 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 </div>
             )}
 
-            {/* Nav */}
-            <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5">
+            {/* Nav Main */}
+            <nav className="px-3 py-4 flex flex-col gap-0.5">
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] px-2 mb-2">
                     Menu
                 </p>
-                {nav.map(({ href, label, icon }) => {
+                {navMain.map(({ href, label, icon }) => {
                     const active = path === href;
                     return (
                         <Link
@@ -89,6 +96,51 @@ export default function Sidebar({ onClose }: SidebarProps) {
                         >
                             <span className="text-base leading-none">{icon}</span>
                             <span>{label}</span>
+                            {isUploading && !active && (
+                                <span className="ml-auto text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                                    ⚠
+                                </span>
+                            )}
+                        </Link>
+                    );
+                })}
+            </nav>
+
+            {/* Nav Uploads */}
+            <nav className="flex-1 px-3 py-0 flex flex-col gap-0.5">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] px-2 mb-2 mt-2">
+                    Schedule
+                </p>
+                {navUpload.map((item) => {
+                    const active = path === item.href;
+                    if (item.disabled) {
+                        return (
+                            <div
+                                key={item.label}
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium border-l-[3px] border-transparent text-[var(--muted)] opacity-50 cursor-not-allowed"
+                            >
+                                <span className="text-base leading-none">{item.icon}</span>
+                                <span>{item.label}</span>
+                            </div>
+                        )
+                    }
+
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={(e) => handleNavClick(e, item.href)}
+                            className={[
+                                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium no-underline",
+                                "transition-all duration-150 border-l-[3px]",
+                                active
+                                    ? "bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-500"
+                                    : "text-[var(--muted)] border-transparent hover:bg-[var(--surface-2)] hover:text-[var(--text)]",
+                                isUploading && !active ? "opacity-60" : "",
+                            ].join(" ")}
+                        >
+                            <span className="text-base leading-none">{item.icon}</span>
+                            <span>{item.label}</span>
                             {isUploading && !active && (
                                 <span className="ml-auto text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
                                     ⚠

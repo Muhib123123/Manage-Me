@@ -11,18 +11,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
             authorization: {
                 params: {
-                    // Request YouTube upload permission at login
-                    scope: [
-                        "openid",
-                        "email",
-                        "profile",
-                        "https://www.googleapis.com/auth/youtube.upload",
-                        "https://www.googleapis.com/auth/youtube.readonly",
-                    ].join(" "),
-                    // CRITICAL: needed to receive a refresh_token for background uploads
-                    access_type: "offline",
-                    // CRITICAL: forces consent screen every time so refresh_token is always returned
-                    prompt: "consent",
+                    // Phase 1: Basic Auth. Only request profile info.
+                    // We will explicitly request YouTube permissions later in the Connections Hub.
+                    scope: "openid email profile",
                 },
             },
         }),

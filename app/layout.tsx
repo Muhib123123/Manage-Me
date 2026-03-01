@@ -1,23 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Inter } from "next/font/google";
+import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 
-const geist = Geist({
-  variable: "--font-geist-sans",
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
 });
 
-const inter = Inter({
-  variable: "--font-inter",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Manage Me — YouTube Video Scheduler",
+  title: "Manage Me — Social Media Scheduler",
   description:
-    "Schedule and automatically publish your YouTube videos and Shorts at the perfect time.",
+    "Schedule and automatically publish your videos and photos at the perfect time.",
 };
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geist.variable} ${inter.variable} antialiased`}>
+      <body className={`${playfair.variable} ${dmSans.variable} antialiased transition-colors`}>
         <Providers>{children}</Providers>
       </body>
     </html>

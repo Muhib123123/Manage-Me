@@ -4,52 +4,73 @@
 @variant dark (&:where(.dark, .dark *));
 
 
-/* ─── Design Tokens ─────────────────────────────── */
+/* ─── Premium Design Tokens ─────────────────────── */
 :root {
-  /* Slate Clean — Light Mode (Default) */
-  --bg: #f8fafc;
+  /* Editorial Neutral — Light Mode */
+  --bg: #fdfcfb;
   --surface: #ffffff;
-  --surface-2: #f1f5f9;
-  --border: rgba(0, 0, 0, 0.08);
-  --border-solid: #e2e8f0;
-  --primary: #2563eb;
-  --primary-glow: rgba(37, 99, 235, 0.15);
-  --accent: #4338ca;
-  --text: #0f172a;
-  --muted: #64748b;
-  --radius: 12px;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --surface-2: #f4f4f5;
+  --border: rgba(0, 0, 0, 0.05);
+  --border-solid: #e4e4e7;
+  --primary: #18181b;
+  /* Near black */
+  --primary-glow: rgba(24, 24, 27, 0.05);
+  --accent: #ca8a04;
+  /* Muted mustard yellow */
+  --text: #18181b;
+  --muted: #71717a;
+  --radius: 8px;
+  /* Slightly sharper corners */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .dark {
-  --bg: #0b0d12;
-  --surface: #13161e;
-  --surface-2: #1c2030;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-solid: rgba(255, 255, 255, 0.10);
-  --primary: #3b82f6;
-  --primary-glow: rgba(59, 130, 246, 0.25);
-  --accent: #4f46e5;
-  --text: #f0f2f8;
-  --muted: #7a8098;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  /* True Premium Dark Mode */
+  --bg: #0a0a0a;
+  --surface: #121212;
+  --surface-2: #1a1a1a;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-solid: rgba(255, 255, 255, 0.12);
+  --primary: #f8fafc;
+  /* Near white primary */
+  --primary-glow: rgba(248, 250, 252, 0.05);
+  --accent: #facc15;
+  --text: #ededed;
+  --muted: #a1a1aa;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
-/* ─── Base ──────────────────────────────────────── */
+/* ─── Base Typography & Layout ──────────────────── */
 
 html {
   scroll-behavior: smooth;
 }
 
+/* ─── Global theme transition ───────────────────── */
+*,
+*::before,
+*::after {
+  transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+}
+
 body {
   background-color: var(--bg);
   color: var(--text);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-dm-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-playfair), serif;
+  letter-spacing: -0.02em;
 }
 
 /* ─── Scrollbar ─────────────────────────────────── */

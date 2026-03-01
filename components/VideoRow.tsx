@@ -2,19 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-type Video = {
-    id: string;
-    title: string;
-    videoType: string;
-    status: string;
-    scheduledAt: Date;
-    youtubeUrl: string | null;
-    errorMessage: string | null;
-    privacy: string;
-    storageUrl: string;
-    thumbnailUrl: string | null;
-};
+import { UnifiedPost } from "@/types";
 
 const STATUS_META: Record<string, { label: string; color: string; border: string; bg: string }> = {
     PENDING: { label: "Pending", color: "#b45309", border: "#fde68a", bg: "#fffbeb" },
@@ -30,21 +18,26 @@ const STATUS_LEFT: Record<string, string> = {
     FAILED: "border-l-red-500",
 };
 
-export function VideoRow({ video, showError }: { video: Video; showError?: boolean }) {
+export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: boolean }) {
     const router = useRouter();
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState("");
     const [videoError, setVideoError] = useState(false);
 
-    const meta = STATUS_META[video.status] ?? STATUS_META.PENDING;
-    const leftBorder = STATUS_LEFT[video.status] ?? "border-l-slate-300";
+    const meta = STATUS_META[post.status] ?? STATUS_META.PENDING;
+    const leftBorder = STATUS_LEFT[post.status] ?? "border-l-slate-300";
 
     const handleUploadNow = async () => {
-        if (!confirm(`Upload "${video.title}" to YouTube now?`)) return;
+        if (!confirm(`Upload "${post.title}" to ${post.platform === "YOUTUBE" ? "YouTube" : "Instagram"} now?`)) return;
         setUploading(true);
         setUploadError("");
         try {
-            const res = await fetch(`/api/videos/${video.id}/upload`, { method: "POST" });
+            // TODO: Route for Instagram uploads will be built in Phase 6
+            const apiRoute = post.platform === "YOUTUBE"
+                ? `/api/videos/${post.id}/upload`
+                : `/api/instagram/${post.id}/upload`;
+
+            const res = await fetch(apiRoute, { method: "POST" });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Upload failed");
             router.refresh();
@@ -56,10 +49,15 @@ export function VideoRow({ video, showError }: { video: Video; showError?: boole
     };
 
     const handleDelete = async () => {
-        if (!confirm(`Cancel and delete "${video.title}"?`)) return;
-        await fetch(`/api/videos?id=${video.id}`, { method: "DELETE" });
+        if (!confirm(`Cancel and delete "${post.title}"?`)) return;
+        const apiRoute = post.platform === "YOUTUBE" ? "/api/videos" : "/api/instagram";
+        await fetch(`${apiRoute}?id=${post.id}`, { method: "DELETE" });
         router.refresh();
     };
+
+    const liveUrl = post.platform === "YOUTUBE"
+        ? (post.platformId ? `https://www.youtube.com/watch?v=${post.platformId}` : null)
+        : (post.platformId ? `https://www.instagram.com/p/${post.platformId}` : null);
 
     return (
         <div
@@ -71,50 +69,63 @@ export function VideoRow({ video, showError }: { video: Video; showError?: boole
         >
             {/* Thumbnail / Video preview */}
             <div className="w-[88px] h-[56px] rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 relative">
-                {video.thumbnailUrl ? (
+                {post.thumbnailUrl ? (
                     // Show uploaded thumbnail image
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
-                        src={video.thumbnailUrl}
-                        alt={video.title}
+                        src={post.thumbnailUrl}
+                        alt={post.title}
                         className="w-full h-full object-cover"
                     />
-                ) : !videoError ? (
+                ) : !videoError && post.mediaType !== "PHOTO" ? (
                     // Show first frame of video using <video preload="metadata">
                     <video
-                        src={video.storageUrl}
+                        src={post.storageUrl}
                         preload="metadata"
                         muted
                         playsInline
                         className="w-full h-full object-cover"
                         onError={() => setVideoError(true)}
                     />
+                ) : post.mediaType === "PHOTO" ? (
+                    <img
+                        src={post.storageUrl}
+                        alt={post.title}
+                        className="w-full h-full object-cover"
+                    />
                 ) : (
                     // Fallback icon
                     <div className="w-full h-full flex items-center justify-center text-2xl">
-                        {video.videoType === "short" ? "🩳" : "📹"}
+                        {post.platform === "INSTAGRAM"
+                            ? "📸"
+                            : (post.mediaType === "short" ? "🩳" : "📹")}
                     </div>
                 )}
 
-                {/* Video type badge overlay */}
-                <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1 py-0.5 rounded">
-                    {video.videoType === "short" ? "SHORT" : "VIDEO"}
+                {/* Video type / Platform badge overlay */}
+                <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-1">
+                    <span>{post.platform === "YOUTUBE" ? "YT" : "IG"}</span>
+                    <span className="opacity-50">|</span>
+                    <span>
+                        {post.platform === "INSTAGRAM"
+                            ? post.mediaType
+                            : (post.mediaType === "short" ? "SHORT" : "VIDEO")}
+                    </span>
                 </div>
             </div>
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-[var(--text)] truncate mb-0.5">
-                    {video.title}
+                <p className="font-semibold text-sm text-[var(--text)] truncate mb-0.5 flex items-center gap-2">
+                    {post.title}
                 </p>
                 <p className="text-[var(--muted)] text-xs">
-                    {video.privacy} ·{" "}
-                    {video.status === "DONE"
-                        ? `Published ${new Date(video.scheduledAt).toLocaleDateString()}`
-                        : `Scheduled: ${new Date(video.scheduledAt).toLocaleString()}`}
+                    {post.privacy && `${post.privacy} · `}
+                    {post.status === "DONE"
+                        ? `Published ${new Date(post.scheduledAt).toLocaleDateString()}`
+                        : `Scheduled: ${new Date(post.scheduledAt).toLocaleString()}`}
                 </p>
-                {showError && video.errorMessage && (
-                    <p className="text-red-600 text-xs mt-1">⚠ {video.errorMessage}</p>
+                {showError && post.errorMessage && (
+                    <p className="text-red-600 text-xs mt-1">⚠ {post.errorMessage}</p>
                 )}
                 {uploadError && (
                     <p className="text-red-600 text-xs mt-1">⚠ {uploadError}</p>
@@ -131,25 +142,26 @@ export function VideoRow({ video, showError }: { video: Video; showError?: boole
 
             {/* Actions */}
             <div className="flex gap-2 shrink-0">
-                {video.youtubeUrl && (
+                {liveUrl && (
                     <a
-                        href={video.youtubeUrl}
+                        href={liveUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold no-underline hover:bg-red-700 transition-colors"
+                        className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold no-underline transition-colors ${post.platform === "YOUTUBE" ? "bg-red-600 hover:bg-red-700" : "bg-fuchsia-600 hover:bg-fuchsia-700"
+                            }`}
                     >
                         ▶ View
                     </a>
                 )}
-                {(video.status === "PENDING" || video.status === "FAILED") && !uploading && (
+                {(post.status === "PENDING" || post.status === "FAILED") && !uploading && (
                     <button
                         onClick={handleUploadNow}
-                        className="btn-primary px-3 py-1.5 text-xs"
+                        className="px-3 py-1.5 rounded-lg bg-[var(--text)] text-[var(--surface)] text-xs font-semibold hover:opacity-90 transition-opacity"
                     >
                         ⬆ Upload Now
                     </button>
                 )}
-                {video.status !== "DONE" && video.status !== "UPLOADING" && (
+                {post.status !== "DONE" && post.status !== "UPLOADING" && (
                     <button
                         onClick={handleDelete}
                         className="px-3 py-1.5 rounded-lg border border-[var(--border-solid)] bg-transparent text-[var(--muted)] text-xs font-medium cursor-pointer transition-all hover:text-red-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20"

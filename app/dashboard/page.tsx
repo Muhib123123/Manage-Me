@@ -2,50 +2,66 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { VideoRow } from "@/components/VideoRow";
+import { UnifiedPost } from "@/types";
 
 export default async function DashboardPage() {
     const session = await auth();
     const userId = session!.user.id;
 
-    const [pending, published, failed] = await Promise.all([
-        prisma.video.findMany({
+    const [ytPending, ytPublished, ytFailed, igPending, igPublished, igFailed] = await Promise.all([
+        // YouTube
+        prisma.youtubePost.findMany({
             where: { userId, status: { in: ["PENDING", "UPLOADING"] } },
             orderBy: { scheduledAt: "asc" },
-            select: {
-                id: true, title: true, videoType: true, status: true,
-                scheduledAt: true, privacy: true,
-                storageUrl: true, thumbnailUrl: true,
-                youtubeId: true, errorMessage: true,
-            },
         }),
-        prisma.video.findMany({
+        prisma.youtubePost.findMany({
             where: { userId, status: "DONE" },
             orderBy: { updatedAt: "desc" },
-            select: {
-                id: true, title: true, videoType: true, status: true,
-                scheduledAt: true, privacy: true,
-                storageUrl: true, thumbnailUrl: true,
-                youtubeId: true, errorMessage: true,
-            },
         }),
-        prisma.video.findMany({
+        prisma.youtubePost.findMany({
             where: { userId, status: "FAILED" },
             orderBy: { updatedAt: "desc" },
-            select: {
-                id: true, title: true, videoType: true, status: true,
-                scheduledAt: true, privacy: true,
-                storageUrl: true, thumbnailUrl: true,
-                youtubeId: true, errorMessage: true,
-            },
+        }),
+
+        // Instagram
+        prisma.instagramPost.findMany({
+            where: { userId, status: { in: ["PENDING", "UPLOADING"] } },
+            orderBy: { scheduledAt: "asc" },
+        }),
+        prisma.instagramPost.findMany({
+            where: { userId, status: "DONE" },
+            orderBy: { updatedAt: "desc" },
+        }),
+        prisma.instagramPost.findMany({
+            where: { userId, status: "FAILED" },
+            orderBy: { updatedAt: "desc" },
         }),
     ]);
 
-    // Map youtubeId → full URL
-    const toRows = (videos: typeof pending) =>
-        videos.map((v) => ({
-            ...v,
-            youtubeUrl: v.youtubeId ? `https://www.youtube.com/watch?v=${v.youtubeId}` : null,
+    const normalizeYT = (posts: typeof ytPending): UnifiedPost[] =>
+        posts.map(p => ({
+            id: p.id, platform: "YOUTUBE", title: p.title,
+            mediaType: p.videoType, status: p.status, scheduledAt: p.scheduledAt,
+            storageUrl: p.storageUrl, thumbnailUrl: p.thumbnailUrl,
+            errorMessage: p.errorMessage, platformId: p.youtubeId, privacy: p.privacy
         }));
+
+    const normalizeIG = (posts: typeof igPending): UnifiedPost[] =>
+        posts.map(p => ({
+            id: p.id, platform: "INSTAGRAM", title: p.caption || "Instagram Post",
+            mediaType: p.mediaType, status: p.status, scheduledAt: p.scheduledAt,
+            storageUrl: p.storageUrl, thumbnailUrl: null,
+            errorMessage: p.errorMessage, platformId: p.instagramId
+        }));
+
+    const pending = [...normalizeYT(ytPending), ...normalizeIG(igPending)]
+        .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
+
+    const published = [...normalizeYT(ytPublished), ...normalizeIG(igPublished)]
+        .sort((a, b) => b.scheduledAt.getTime() - a.scheduledAt.getTime());
+
+    const failed = [...normalizeYT(ytFailed), ...normalizeIG(igFailed)]
+        .sort((a, b) => b.scheduledAt.getTime() - a.scheduledAt.getTime());
 
     return (
         <div className="p-6">
@@ -77,12 +93,12 @@ export default async function DashboardPage() {
                     <EmptyState
                         icon="📅"
                         message="No scheduled uploads yet"
-                        cta="Schedule your first video →"
+                        cta="Schedule your first post →"
                         href="/upload"
                     />
                 ) : (
                     <div className="flex flex-col gap-3">
-                        {toRows(pending).map((v) => <VideoRow key={v.id} video={v} />)}
+                        {pending.map((p) => <VideoRow key={p.id} post={p} />)}
                     </div>
                 )}
             </Section>
@@ -91,7 +107,7 @@ export default async function DashboardPage() {
             {failed.length > 0 && (
                 <Section title="❌ Failed" count={failed.length} statusColor="red">
                     <div className="flex flex-col gap-3">
-                        {toRows(failed).map((v) => <VideoRow key={v.id} video={v} showError />)}
+                        {failed.map((p) => <VideoRow key={p.id} post={p} showError />)}
                     </div>
                 </Section>
             )}
@@ -101,12 +117,12 @@ export default async function DashboardPage() {
                 {published.length === 0 ? (
                     <EmptyState
                         icon="✅"
-                        message="No published videos yet"
+                        message="No published posts yet"
                         cta="They'll appear here after scheduled uploads complete."
                     />
                 ) : (
                     <div className="flex flex-col gap-3">
-                        {toRows(published).map((v) => <VideoRow key={v.id} video={v} />)}
+                        {published.map((p) => <VideoRow key={p.id} post={p} />)}
                     </div>
                 )}
             </Section>

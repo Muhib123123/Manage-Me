@@ -61,18 +61,47 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  accounts Account[]
-  sessions Session[]
-  videos   Video[]
+  accounts             Account[]
+  sessions             Session[]
+  youtubePosts         YoutubePost[]
+  instagramPosts       InstagramPost[]
+  platformConnections  PlatformConnection[]
 
   createdAt DateTime @default(now())
 }
 
 // ─────────────────────────────────────────────
-// Video model (app-specific)
+// Platform Connections (OAuth Tokens)
 // ─────────────────────────────────────────────
 
-model Video {
+model PlatformConnection {
+  id           String @id @default(cuid())
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  platform     String // "YOUTUBE" or "INSTAGRAM"
+  
+  // OAuth Tokens
+  accessToken  String @db.Text
+  refreshToken String? @db.Text
+  expiresAt    DateTime?
+  
+  // Platform specific ID (e.g. YouTube Channel ID or Instagram Business Account ID)
+  platformId   String? 
+  platformName String? // Human readable name (e.g. Channel Name)
+  platformAvatar String?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, platform])
+}
+
+// ─────────────────────────────────────────────
+// YouTube Post model
+// ─────────────────────────────────────────────
+
+model YoutubePost {
   id     String @id @default(cuid())
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -82,22 +111,51 @@ model Video {
 
   // YouTube metadata
   title       String
-  description String? @db.Text
+  description String?  @db.Text
   tags        String[]
-  privacy     String  @default("public") // "public" | "unlisted" | "private"
+  privacy     String   @default("public") // "public" | "unlisted" | "private"
 
-  // Storage (Cloudflare R2 / S3)
-  storageUrl   String  // URL of the raw video file in cloud storage
-  thumbnailUrl String? // URL of the thumbnail (not used for Shorts)
+  // Storage (UploadThing)
+  storageUrl   String
+  thumbnailUrl String?
 
   // Scheduling
-  scheduledAt DateTime // The date and time to auto-upload to YouTube
+  scheduledAt DateTime
 
   // Status tracking
   status       String  @default("PENDING") // "PENDING" | "UPLOADING" | "DONE" | "FAILED"
   youtubeId    String? // YouTube video ID after successful upload
-  youtubeUrl   String? // Full YouTube URL (youtube.com/watch?v=youtubeId)
-  errorMessage String? // Error details if status is "FAILED"
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Instagram Post model
+// ─────────────────────────────────────────────
+
+model InstagramPost {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Media type: photo, video, or reel
+  mediaType String @default("PHOTO") // "PHOTO" | "VIDEO" | "REEL"
+
+  // Instagram metadata
+  caption String? @db.Text
+
+  // Storage (UploadThing)
+  storageUrl String
+
+  // Scheduling
+  scheduledAt DateTime
+
+  // Status tracking
+  status       String  @default("PENDING") // "PENDING" | "UPLOADING" | "DONE" | "FAILED"
+  instagramId  String? // Instagram Media ID after successful publish
+  errorMessage String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

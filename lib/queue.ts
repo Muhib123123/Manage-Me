@@ -31,29 +31,27 @@ if (!globalForWorker.videoWorker && redisUrl) {
             const { videoId } = job.data;
 
             // Mark as uploading
-            await prisma.video.update({
+            await prisma.youtubePost.update({
                 where: { id: videoId },
                 data: { status: "UPLOADING" },
             });
 
             try {
                 const youtubeVideoId = await uploadVideoToYouTube(videoId);
-                const youtubeUrl = `https://www.youtube.com/watch?v=${youtubeVideoId}`;
 
                 // Mark as done
-                await prisma.video.update({
+                await prisma.youtubePost.update({
                     where: { id: videoId },
                     data: {
                         status: "DONE",
                         youtubeId: youtubeVideoId,
-                        youtubeUrl,
                     },
                 });
 
                 console.log(`✅ Job ${job.id}: Video ${videoId} uploaded successfully!`);
             } catch (error: any) {
                 // Mark as failed with error message
-                await prisma.video.update({
+                await prisma.youtubePost.update({
                     where: { id: videoId },
                     data: { status: "FAILED", errorMessage: translateYouTubeError(error) },
                 });

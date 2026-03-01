@@ -11,7 +11,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 attribute="class"
                 defaultTheme="light"
                 storageKey="manage-me-theme"
-                disableTransitionOnChange
             >
                 <UploadProvider>
                     {children}

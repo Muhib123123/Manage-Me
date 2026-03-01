@@ -1,7 +1,7 @@
 import { prisma } from './lib/prisma';
 
 async function main() {
-    const videos = await prisma.video.findMany({
+    const videos = await prisma.youtubePost.findMany({
         orderBy: { createdAt: 'desc' },
         take: 1
     });

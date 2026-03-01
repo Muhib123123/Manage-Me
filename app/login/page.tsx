@@ -12,50 +12,37 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
-            {/* Background blobs
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div
-                    className="absolute w-[600px] h-[600px] rounded-full -top-[100px] -left-[100px] animate-float"
-                    style={{ background: "radial-gradient(circle, var(--primary-glow) 0%, transparent 70%)" }}
-                />
-                <div
-                    className="absolute w-[500px] h-[500px] rounded-full -bottom-[80px] -right-[80px]"
-                    style={{
-                        background: "radial-gradient(circle, rgba(108,99,255,0.10) 0%, transparent 70%)",
-                        animation: "float 8s ease-in-out infinite reverse",
-                    }}
-                />
-            </div> */}
+        <main className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden bg-[var(--bg)]">
 
-            {/* Card */}
-            <div className="glass animate-fade-up w-full max-w-[420px] rounded-3xl px-10 py-12 relative z-[1]">
+            {/* Minimal Background Element */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+                <div
+                    className="absolute w-[800px] h-[800px] rounded-full -top-[200px] -right-[200px] blur-3xl opacity-20"
+                    style={{ background: "radial-gradient(circle, var(--accent) 0%, transparent 60%)" }}
+                />
+            </div>
+
+            {/* Premium Card */}
+            <div className="animate-fade-up w-full max-w-[400px] bg-[var(--surface)] border border-[var(--border)] rounded-2xl px-10 py-12 relative z-[1] shadow-sm">
+
                 {/* Logo mark */}
-                <div className="text-center mb-9">
-                    <div
-                        className="w-16 h-16 rounded-[18px] bg-gradient-to-br from-[#ff3b5c] to-[#6c63ff] flex items-center justify-center mx-auto mb-5 text-[28px]"
-                        style={{ boxShadow: "0 8px 32px var(--primary-glow)", animation: "pulse-glow 3s ease-in-out infinite" }}
-                    >
+                <div className="text-center mb-10">
+                    <div className="w-12 h-12 rounded-xl bg-[var(--primary)] text-[var(--surface)] flex items-center justify-center mx-auto mb-6 text-xl shadow-sm">
                         🎬
                     </div>
 
-                    <h1 className="text-[28px] font-extrabold tracking-tight mb-2">
-                        <span className="gradient-text">Manage Me</span>
+                    <h1 className="text-4xl font-semibold tracking-tight mb-3 text-[var(--text)]">
+                        Manage Me
                     </h1>
 
-                    <p className="text-[var(--muted)] text-sm leading-relaxed">
-                        Schedule YouTube videos &amp; Shorts to publish
-                        <br />
-                        automatically at the perfect time.
+                    <p className="text-[var(--muted)] text-base leading-relaxed max-w-[280px] mx-auto">
+                        Your unified studio to schedule posts across YouTube and Instagram.
                     </p>
                 </div>
 
-                {/* Divider */}
-                <div className="h-px bg-[var(--border)] mb-7" />
-
                 {/* Sign in button */}
                 <button
-                    className="btn-google"
+                    className="btn-google h-12 w-full text-[15px] hover:bg-[var(--surface-2)] transition-colors duration-200"
                     onClick={handleGoogleSignIn}
                     disabled={loading}
                     style={{ opacity: loading ? 0.7 : 1 }}
@@ -64,25 +51,23 @@ export default function LoginPage() {
                     {loading ? "Connecting…" : "Continue with Google"}
                 </button>
 
-                {/* Info note */}
-                <p className="mt-5 text-[var(--muted)] text-xs text-center leading-relaxed">
-                    We'll ask permission to upload videos to your
-                    <br />
-                    YouTube channel on your behalf.
-                </p>
-
-                {/* Feature pills */}
-                <div className="flex gap-2 justify-center flex-wrap mt-7">
-                    {["📹 Normal Videos", "🩳 Shorts", "📅 Scheduled Uploads"].map((f) => (
+                {/* Feature pills (Restrained) */}
+                <div className="flex gap-2 justify-center flex-wrap mt-10">
+                    {["YouTube", "Instagram", "Scheduled"].map((f) => (
                         <span
                             key={f}
-                            className="px-3 py-[5px] rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-[11px] text-[var(--muted)] font-medium"
+                            className="px-3 py-1 rounded-full bg-[var(--bg)] border border-[var(--border)] text-[11px] uppercase tracking-wider text-[var(--muted)] font-medium"
                         >
                             {f}
                         </span>
                     ))}
                 </div>
             </div>
+
+            {/* Minimal Footer */}
+            <p className="mt-8 text-[11px] text-[var(--muted)] tracking-wide uppercase text-center relative z-[1]">
+                A Modern Social Publishing Hub
+            </p>
         </main>
     );
 }

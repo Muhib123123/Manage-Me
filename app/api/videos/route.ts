@@ -7,7 +7,7 @@ export async function GET() {
     const session = await auth();
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const videos = await prisma.video.findMany({
+    const videos = await prisma.youtubePost.findMany({
         where: { userId: session.user.id },
         orderBy: { createdAt: "desc" },
     });
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    const video = await prisma.video.create({
+    const video = await prisma.youtubePost.create({
         data: {
             userId: session.user.id,
             title,
@@ -88,7 +88,7 @@ export async function DELETE(req: NextRequest) {
     if (!id) return NextResponse.json({ error: "Missing video id" }, { status: 400 });
 
     // Ensure the video belongs to this user
-    const video = await prisma.video.findFirst({
+    const video = await prisma.youtubePost.findFirst({
         where: { id, userId: session.user.id },
     });
 
@@ -100,6 +100,6 @@ export async function DELETE(req: NextRequest) {
         );
     }
 
-    await prisma.video.delete({ where: { id } });
+    await prisma.youtubePost.delete({ where: { id } });
     return NextResponse.json({ success: true });
 }

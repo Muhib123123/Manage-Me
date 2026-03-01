@@ -10,37 +10,41 @@ import { Readable } from "stream";
  * automatically refreshes the access_token when needed.
  */
 export async function getAuthClient(userId: string) {
-    const account = await prisma.account.findFirst({
-        where: { userId, provider: "google" },
+    const connection = await prisma.platformConnection.findUnique({
+        where: {
+            userId_platform: { userId, platform: "YOUTUBE" },
+        },
     });
 
-    if (!account?.refresh_token) {
+    if (!connection) {
+        throw new Error(`YouTube is not connected for user ${userId}.`);
+    }
+
+    if (!connection.refreshToken) {
         throw new Error(
-            `No Google refresh token found for user ${userId}. User must re-authenticate.`
+            `No YouTube refresh token found for user ${userId}. User must re-authenticate.`
         );
     }
 
     const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID!,
         process.env.GOOGLE_CLIENT_SECRET!,
-        `${process.env.NEXTAUTH_URL}/api/auth/callback/google`
+        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/youtube/callback`
     );
 
     oauth2Client.setCredentials({
-        refresh_token: account.refresh_token,
-        access_token: account.access_token ?? undefined,
-        expiry_date: account.expires_at ? account.expires_at * 1000 : undefined,
+        refresh_token: connection.refreshToken,
+        access_token: connection.accessToken,
+        expiry_date: connection.expiresAt ? connection.expiresAt.getTime() : undefined,
     });
 
     // Save refreshed token back to the DB if it changes
     oauth2Client.on("tokens", async (tokens) => {
-        await prisma.account.update({
-            where: { id: account.id },
+        await prisma.platformConnection.update({
+            where: { id: connection.id },
             data: {
-                access_token: tokens.access_token ?? account.access_token,
-                expires_at: tokens.expiry_date
-                    ? Math.floor(tokens.expiry_date / 1000)
-                    : account.expires_at,
+                accessToken: tokens.access_token ?? connection.accessToken,
+                expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : connection.expiresAt,
             },
         });
     });
@@ -81,7 +85,7 @@ async function fetchFileStream(url: string): Promise<{ stream: Readable; content
  */
 export async function uploadVideoToYouTube(videoId: string): Promise<string> {
     // 1. Fetch video record
-    const video = await prisma.video.findUniqueOrThrow({ where: { id: videoId } });
+    const video = await prisma.youtubePost.findUniqueOrThrow({ where: { id: videoId } });
 
     // 2. Get authenticated YouTube client
     const auth = await getAuthClient(video.userId);

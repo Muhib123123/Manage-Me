@@ -1,6 +1,6 @@
-# 🎬 Manage-Me — YouTube Video Scheduler SaaS
+# 🎬 Manage-Me — Multi-Platform Social Media Scheduler
 
-A platform that allows YouTube content creators to upload videos, connect their YouTube channel via Google OAuth, and schedule automatic uploads at a specific date and time.
+A centralized hub that allows content creators to sign up, connect their **YouTube** and **Instagram** accounts, and schedule automatic video and photo uploads to each platform independently.
 
 ---
 
@@ -10,619 +10,179 @@ A platform that allows YouTube content creators to upload videos, connect their 
 | ---------------- | --------------------------------------- |
 | Framework        | Next.js 16 (App Router, TypeScript)     |
 | Styling          | Tailwind CSS v4                         |
-| Auth             | NextAuth.js v5 (Google OAuth 2.0)       |
+| Auth             | NextAuth.js v5 (Google & Facebook OAuth)|
 | Database         | PostgreSQL + Prisma ORM                 |
 | File Storage     | UploadThing                             |
 | Job Queue        | BullMQ + Redis (Upstash Redis)          |
-| YouTube API      | `googleapis` npm package (v3)           |
-| Email (optional) | Resend                                  |
+| APIs             | Google API (v3), Instagram Graph API    |
 | Hosting          | Vercel (app) + Railway (Redis/Postgres) |
 
 ---
 
 ## ✨ Core Features
 
-- **Google OAuth Login** — Users sign in with their Google account and grant YouTube upload permissions
-- **Video Type Selection** — When uploading, the user chooses between:
-  - � **Normal YouTube Video** — Standard video upload
-  - 🩳 **YouTube Short** — Vertical short-form video (≤60 seconds)
-- **Video Metadata** — Each upload includes:
-  - Title (max 100 characters)
-  - Description / Bio (max 5000 characters)
-  - Tags (comma-separated)
-  - Thumbnail (optional image upload)
-  - Privacy setting (Public / Unlisted / Private)
-- **Scheduled Publishing** — User picks a specific date and time; the video is automatically uploaded to YouTube when that moment arrives
-- **Dashboard — Pending Section** — Shows all videos that are waiting to be published (status: PENDING or UPLOADING), with their scheduled date/time countdown
-- **Dashboard — Published Section** — Shows all videos that have been successfully uploaded to YouTube (status: DONE), with a link to the YouTube video
-- **Error Visibility** — If an upload fails (status: FAILED), the user sees the error reason and can retry
+- **Hub-Based Authentication** — Users sign up via Google with **basic profile access only** (no heavy permissions required to create an account).
+- **Independent Platform Connections** — Users manually connect their YouTube Channels and Instagram Creator/Business accounts from a central Connections Dashboard.
+- **Unified Scheduling Engine** — A robust BullMQ + Redis backend that routes scheduled posts to the correct platform API at the exact second.
+- **Dedicated YouTube Studio** — 
+  - Upload Normal Videos or YouTube Shorts
+  - Support for custom thumbnails, privacy settings, descriptions, and tags.
+- **Dedicated Instagram Studio** —
+  - Upload Photos, Videos, or Reels
+  - Enforcement of Instagram strict rules (aspect ratios, max file sizes, media containers).
 
 ---
 
-## �🗺️ Project Phases Overview
+## 🗺️ Project Phases Overview
 
 ```
-Phase 1 → Project setup + Auth (Google OAuth)
-Phase 2 → Dashboard UI + Video upload form
-Phase 3 → Cloud storage integration (UploadThing)
-Phase 4 → YouTube API integration (manual upload test)
-Phase 5 → Scheduler engine (BullMQ + Redis)
-Phase 6 → Status tracking, notifications, error handling
-Phase 7 → Multi-client polish + deployment
+Phase 1 → Foundation & Basic Auth (Google Login - No YouTube Scopes)
+Phase 2 → Database Architecture (Multi-platform models)
+Phase 3 → The Connections Hub (Linking YouTube & Instagram via OAuth)
+Phase 4 → Cloud Storage & File Router (UploadThing setup)
+Phase 5 → Unified Dashboard UI & Routing
+Phase 6 → YouTube Scheduling Pipeline (UI + API Integration)
+Phase 7 → Instagram Scheduling Pipeline (UI + Graph API Integration)
+Phase 8 → The Scheduler Engine (BullMQ Workers & Redis)
 ```
 
 ---
 
 ---
 
-# 🖥️ FRONTEND
+# 🛠️ IMPLEMENTATION ROADMAP
 
-## Phase 1 — Project Setup & Auth UI
+## Phase 1 — Foundation & Basic Auth
 
-### 1.1 Install Required Packages
+### 1.1 Goal
+Change the initial login flow so new users can create a `Manage-Me` account using Google **without** being forced to grant YouTube upload permissions immediately. This drastically reduces signup friction.
 
-```bash
-npm install next-auth@beta @auth/prisma-adapter prisma @prisma/client
-npm install googleapis
-npm install @upstash/redis bullmq
-npm install uploadthing @uploadthing/react
-npm install date-fns uuid @types/uuid
-```
-
-### 1.2 Folder Structure (App Router)
-
-```
-app/
-├── (auth)/
-│   └── login/
-│       └── page.tsx          ← Login page (Google sign-in button)
-├── (dashboard)/
-│   ├── layout.tsx            ← Dashboard layout (sidebar + topbar)
-│   ├── dashboard/
-│   │   └── page.tsx          ← Main dashboard (video list + stats)
-│   ├── upload/
-│   │   └── page.tsx          ← Upload form page
-│   └── schedule/
-│       └── page.tsx          ← Schedule management calendar view
-├── api/
-│   ├── auth/
-│   │   └── [...nextauth]/
-│   │       └── route.ts      ← NextAuth handler
-│   ├── uploadthing/
-│   │   ├── core.ts           ← UploadThing file router (videoUploader, thumbnailUploader)
-│   │   └── route.ts          ← UploadThing Next.js route handler
-│   ├── videos/
-│   │   └── route.ts          ← CRUD for scheduled videos
-│   └── scheduler/
-│       └── route.ts          ← Trigger/check job queue (webhook or cron)
-├── layout.tsx                ← Root layout
-└── globals.css               ← Global styles (Tailwind)
-
-prisma/
-└── schema.prisma             ← Database models
-
-lib/
-├── auth.ts                   ← NextAuth config
-├── prisma.ts                 ← Prisma client singleton
-├── youtube.ts                ← YouTube API helper functions
-├── uploadthing.ts            ← Typed UploadThing component helpers
-└── queue.ts                  ← BullMQ queue setup
-
-components/
-├── VideoCard.tsx             ← Individual video card (status, date, thumbnail, type badge)
-├── UploadForm.tsx            ← Drag & drop uploader + metadata fields + video type toggle
-├── SchedulePicker.tsx        ← Date & time picker for scheduling
-├── VideoTypeToggle.tsx       ← Toggle between Normal Video and YouTube Short
-├── Sidebar.tsx               ← Dashboard navigation
-├── CountdownTimer.tsx        ← Live countdown for pending videos
-└── StatusBadge.tsx           ← PENDING / UPLOADING / DONE / FAILED badge
-```
-
-### 1.3 Login Page (`app/(auth)/login/page.tsx`)
-
-- Show a clean page with a "Sign in with Google" button
-- Use NextAuth's `signIn("google")` function
-- After login → redirect to `/dashboard`
-
-### 1.4 Dashboard Page (`app/(dashboard)/dashboard/page.tsx`)
-
-The dashboard is split into **two clear sections**:
-
-#### 📅 Pending Videos Section
-- Shows all videos with status `PENDING` or `UPLOADING`
-- Each card displays:
-  - Thumbnail preview (or video type icon if no thumbnail)
-  - Video title
-  - Video type badge (Normal / Short)
-  - Scheduled date & time (with countdown e.g. "Uploads in 2 days, 4 hours")
-  - Status badge (PENDING = yellow, UPLOADING = blue)
-  - Option to cancel/delete the scheduled upload
-- If no pending videos → show empty state: "No scheduled uploads yet"
-
-#### ✅ Published Videos Section
-- Shows all videos with status `DONE`
-- Each card displays:
-  - Thumbnail preview
-  - Video title
-  - Video type badge (Normal / Short)
-  - Published date
-  - Status badge (DONE = green)
-  - Direct link to the YouTube video (`youtube.com/watch?v=youtubeId`)
-- If no published videos → show empty state: "No published videos yet"
-
-#### ❌ Failed Videos Section (below Published)
-- Shows all videos with status `FAILED`
-- Each card displays the error reason and a **Retry** button
-- If no failed videos → this section is hidden
-
-#### Header
-- Add a "**+ Schedule New Video**" button (top right) that links to `/upload`
-- Show the user's connected YouTube channel name and avatar
-
-### 1.5 Upload Form Page (`app/(dashboard)/upload/page.tsx`)
-
-Fields required:
-- **Video Type** (toggle/radio buttons)
-  - 📹 `Normal Video` — standard YouTube video
-  - 🩳 `YouTube Short` — vertical format, max 60 seconds (this sets the YouTube category accordingly)
-- **Video file** (drag & drop via UploadThing, accepts `.mp4`, `.mov`, `.avi`, `.mkv`, up to 2GB)
-- **Thumbnail image** (optional drag & drop, `.jpg`, `.png`) — only shown for Normal Videos (Shorts use auto-thumbnail)
-- **Title** (text input, max 100 characters)
-- **Description / Bio** (textarea, max 5000 characters — supports hashtags for Shorts)
-- **Tags** (comma-separated input)
-- **Scheduled Date** (date picker)
-- **Scheduled Time** (time picker, displayed in user's local timezone)
-- **Privacy** (dropdown: Public / Unlisted / Private)
-
-On submit:
-1. Video file uploads to **UploadThing** via `UploadDropzone` component (handled automatically)
-2. Send metadata + UploadThing file URL + video type to `/api/videos` POST endpoint
-3. Job is created in BullMQ queue with a delay until the scheduled time
-4. Redirect to `/dashboard` → Pending section with success toast message
-
-### 1.6 Status Badge Component (`components/StatusBadge.tsx`)
-
-| Status      | Color  | Meaning                              |
-| ----------- | ------ | ------------------------------------ |
-| `PENDING`   | Yellow | Waiting for scheduled time           |
-| `UPLOADING` | Blue   | Currently being uploaded to YouTube  |
-| `DONE`      | Green  | Successfully published on YouTube    |
-| `FAILED`    | Red    | Upload failed (see error log)        |
-
-### 1.7 Environment Variables (Frontend)
-
-```env
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_random_secret_here
-
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-```
+### 1.2 `lib/auth.ts` Updates
+- Configure NextAuth with a standard `GoogleProvider` that only requests `openid`, `email`, and `profile`.
+- Remove the `"https://www.googleapis.com/auth/youtube.upload"` scope from the default login.
+- Users logging in successfully are redirected to the new `/dashboard/connect` page (Phase 3).
 
 ---
 
----
+## Phase 2 — Database Architecture
 
-# ⚙️ BACKEND
+### 2.1 Goal
+Redesign the database schema to handle multiple connected platforms and uniquely structured posts for each platform.
 
-## Phase 2 — Authentication (Google OAuth + YouTube Scopes)
-
-### 2.1 Create Google OAuth App
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project → Enable **YouTube Data API v3**
-3. Go to **APIs & Services → Credentials → Create OAuth 2.0 Client ID**
-4. Set Authorized Redirect URI: `http://localhost:3000/api/auth/callback/google`
-5. Copy `Client ID` and `Client Secret` into `.env.local`
-
-### 2.2 NextAuth Config (`lib/auth.ts`)
-
-```ts
-import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { prisma } from "./prisma";
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          // Request YouTube upload scope at login
-          scope:
-            "openid email profile https://www.googleapis.com/auth/youtube.upload",
-          access_type: "offline", // Required to get refresh_token
-          prompt: "consent",      // Force consent to always get refresh_token
-        },
-      },
-    }),
-  ],
-  callbacks: {
-    async session({ session, user }) {
-      session.user.id = user.id;
-      return session;
-    },
-  },
-});
-```
-
-> **IMPORTANT:** `access_type: "offline"` and `prompt: "consent"` are critical.
-> Without them, you won't receive a `refresh_token` needed for background uploads.
-
-### 2.3 Prisma Schema (`prisma/schema.prisma`)
-
-```prisma
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-// NextAuth required models
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  videos        Video[]
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-// App-specific model
-model Video {
-  id            String      @id @default(cuid())
-  userId        String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  title         String
-  description   String?     @db.Text
-  tags          String[]
-  privacy       String      @default("public")  // public | unlisted | private
-
-  videoType     String      @default("video")   // video | short
-
-  storageUrl    String      // URL of the video file in UploadThing
-  thumbnailUrl  String?     // URL of the thumbnail in UploadThing (optional for Shorts)
-
-  scheduledAt   DateTime    // When to upload to YouTube
-  status        String      @default("PENDING") // PENDING | UPLOADING | DONE | FAILED
-  youtubeId     String?     // YouTube video ID after upload
-  errorMessage  String?     // Error details if FAILED
-
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-}
-```
-
-After editing schema, run:
-
-```bash
-npx prisma migrate dev --name init
-npx prisma generate
-```
+### 2.2 Schema Updates (`prisma/schema.prisma`)
+- **`Account` Model**: Ensure it tracks both `google` (for the app & YouTube token) and `facebook` (for the Instagram token) connections per `User`.
+- **`Post` Model (Unified vs. Separate)**:
+  - Create a generic `Post` model, or separate models (`YoutubePost`, `InstagramPost`) to keep platform-specific data clean.
+  - **YouTube Data requirements**: `title`, `description`, `tags`, `privacy`, `videoType` (Normal/Short), `thumbnailUrl`.
+  - **Instagram Data requirements**: `caption`, `mediaType` (Image/Video/Reel), `aspectRatio` constraints.
+  - **Shared Data requirements**: `userId`, `storageUrl`, `scheduledAt`, `status` (PENDING, UPLOADING, DONE, FAILED), `externalId` (the ID after publishing), `errorMessage`.
 
 ---
 
-## Phase 3 — Cloud Storage (UploadThing)
+## Phase 3 — The Connections Hub
 
-> We use **UploadThing** instead of Cloudflare R2 — no credit card required, built for Next.js, and has a generous free tier.
+### 3.1 Goal
+Create a page where users formally grant the application access to post to their specific social channels.
 
-### 3.1 Setup UploadThing
+### 3.2 UI (`app/(dashboard)/connect/page.tsx`)
+- Display connection state for each platform (e.g., "YouTube: Not Connected", "Instagram: Not Connected").
+- Provide "Connect" buttons for each.
 
-1. Go to [uploadthing.com](https://uploadthing.com) → Sign in (GitHub or Google, no card needed)
-2. Click **"Create a new app"** → name it `manage-me`
-3. Go to **"API Keys"** tab → click the copy icon next to **UploadThing Token** (not Secret Key)
-4. Add to `.env.local`:
-
-```env
-UPLOADTHING_TOKEN=your_token_here
-```
-
-### 3.2 UploadThing File Router (`app/api/uploadthing/core.ts`)
-
-- Defines two upload endpoints:
-  - `videoUploader` — accepts video files up to **2GB**
-  - `thumbnailUploader` — accepts images up to **8MB**
-- Both are protected by a session auth middleware
-- Returns the uploaded file URL which is saved to the database
-
-### 3.3 UploadThing Route Handler (`app/api/uploadthing/route.ts`)
-
-- Mounts the file router at `/api/uploadthing`
-- Handles all UploadThing GET and POST requests
-
-### 3.4 Typed Components Helper (`lib/uploadthing.ts`)
-
-- Exports `UploadDropzone` and `UploadButton` typed to our file router
-- Used in the upload form page to provide the drag-and-drop UI
-- File uploads are handled entirely by UploadThing — no manual pre-signed URL logic needed
+### 3.3 Auth Flow
+- **Connect YouTube**: Triggers an incremental authorization flow (or a specific NextAuth provider setup) requesting the Youtube Upload scope and `offline` access. Stores the resulting `refresh_token` in the DB.
+- **Connect Instagram**: Triggers Facebook OAuth requesting `instagram_basic`, `instagram_content_publish`, `pages_show_list`, and `pages_read_engagement`. Maps the token to the user and identifies their connected Instagram Business/Creator ID.
 
 ---
 
-## Phase 4 — YouTube API Integration
+## Phase 4 — Cloud Storage (UploadThing)
 
-### 4.1 YouTube Helper (`lib/youtube.ts`)
+### 4.1 Goal
+Set up file upload routers that categorize media based on its destination, as YouTube and Instagram have different strict requirements.
 
-```ts
-import { google } from "googleapis";
-import { prisma } from "./prisma";
-
-export async function uploadToYouTube(videoId: string) {
-  // 1. Fetch the video record from DB
-  const video = await prisma.video.findUnique({ where: { id: videoId }, include: { user: true } });
-  if (!video) throw new Error("Video not found");
-
-  // 2. Get the user's Google OAuth tokens from the Account table
-  const account = await prisma.account.findFirst({
-    where: { userId: video.userId, provider: "google" },
-  });
-  if (!account?.refresh_token) throw new Error("No refresh token found");
-
-  // 3. Create OAuth2 client with stored tokens
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
-  );
-  oauth2Client.setCredentials({
-    refresh_token: account.refresh_token,
-    access_token: account.access_token ?? undefined,
-  });
-
-  // 4. Download video from R2/S3 as a stream
-  const videoResponse = await fetch(video.storageUrl);
-  const videoStream = videoResponse.body; // ReadableStream
-
-  // 5. Upload to YouTube
-  const youtube = google.youtube({ version: "v3", auth: oauth2Client });
-  const response = await youtube.videos.insert({
-    part: ["snippet", "status"],
-    requestBody: {
-      snippet: {
-        title: video.title,
-        description: video.description ?? "",
-        tags: video.tags,
-      },
-      status: {
-        privacyStatus: video.privacy,
-      },
-    },
-    media: {
-      mimeType: "video/*",
-      body: videoStream,
-    },
-  });
-
-  // 6. Save YouTube video ID to DB
-  await prisma.video.update({
-    where: { id: videoId },
-    data: { status: "DONE", youtubeId: response.data.id },
-  });
-}
-```
-
-### 4.2 Long Video Support (Resumable Upload)
-
-All uploads use YouTube's **resumable upload protocol** via `googleapis`.
-This is essential for videos longer than ~5 minutes:
-
-- The video file is fetched from UploadThing via a URL.
-- A `HEAD` request gets the exact `Content-Length` first.
-- The stream + Content-Length is passed to `youtube.videos.insert()`,
-  which tells googleapis to use the resumable protocol instead of a simple multipart upload.
-- YouTube's simple upload cuts off videos > ~5MB. Resumable upload supports files up to **256GB**.
-
-**Key difference per video type:**
-
-| Feature | Normal Video | YouTube Short |
-|---|---|---|
-| Duration | Unlimited ✅ | ≤ 60 seconds |
-| categoryId | `"22"` (People & Blogs) | Not set |
-| Thumbnail | Custom upload supported | Auto-generated by YouTube |
-| Description | As entered | Appended with `#Shorts` |
-| Upload method | Resumable | Resumable |
-
-### 4.3 YouTube API Quota Info
-
-| Action         | Quota Cost |
-| -------------- | ---------- |
-| Video upload   | 1,600 units |
-| Video update   | 50 units   |
-| Channel read   | 1 unit     |
-| Daily limit    | 10,000 units |
-
-> This means approximately **6 uploads per day** per project.
-> For production scale: apply for a **quota increase** in Google Cloud Console.
+### 4.2 Setup (`app/api/uploadthing/core.ts`)
+- `youtubeVideoUploader` (Up to 2GB, .mp4/.mov)
+- `youtubeThumbnailUploader` (Up to 8MB images)
+- `instagramImageUploader` (Strict checking for JPEGs, max 8MB, aspect ratios)
+- `instagramVideoUploader` (Shorter limits, max 100MB for normal video, max 60s for reels)
 
 ---
 
-## Phase 5 — Scheduler Engine (BullMQ + Redis)
+## Phase 5 — Unified Dashboard UI & Routing
 
-### 5.1 Setup Upstash Redis
+### 5.1 Goal
+Refactor the UI layout to support navigating deeply into specific platform workspaces once they are connected.
 
-1. Go to [Upstash](https://upstash.com/) → Create a Redis database
-2. Add to `.env.local`:
-
-```env
-UPSTASH_REDIS_URL=rediss://your-upstash-url
-UPSTASH_REDIS_TOKEN=your-upstash-token
+### 5.2 Workspace Routing
+```
+app/(dashboard)/
+├── connect/              ← The Hub
+├── layout.tsx            ← Dynamic Sidebar based on connected accounts
+├── youtube/
+│   ├── page.tsx          ← Sub-dashboard (Pending/Published YouTube videos)
+│   └── upload/page.tsx   ← YouTube specific upload form
+└── instagram/
+    ├── page.tsx          ← Sub-dashboard (Pending/Published IG posts)
+    └── upload/page.tsx   ← Instagram specific upload form
 ```
 
-### 5.2 Queue Setup (`lib/queue.ts`)
-
-```ts
-import { Queue, Worker } from "bullmq";
-import IORedis from "ioredis";
-import { uploadToYouTube } from "./youtube";
-import { prisma } from "./prisma";
-
-const connection = new IORedis(process.env.UPSTASH_REDIS_URL!, {
-  tls: { rejectUnauthorized: false },
-  maxRetriesPerRequest: null,
-});
-
-// The queue where jobs are added
-export const videoQueue = new Queue("youtube-uploads", { connection });
-
-// The worker that processes jobs
-export const videoWorker = new Worker(
-  "youtube-uploads",
-  async (job) => {
-    const { videoId } = job.data;
-
-    // Mark as uploading
-    await prisma.video.update({
-      where: { id: videoId },
-      data: { status: "UPLOADING" },
-    });
-
-    try {
-      await uploadToYouTube(videoId);
-    } catch (error: any) {
-      // Mark as failed with error message
-      await prisma.video.update({
-        where: { id: videoId },
-        data: { status: "FAILED", errorMessage: error.message },
-      });
-      throw error; // Re-throw so BullMQ marks job as failed
-    }
-  },
-  { connection }
-);
-```
-
-### 5.3 Scheduling a Video (in `/api/videos/route.ts`)
-
-When a user submits the upload form, after saving to DB:
-
-```ts
-import { videoQueue } from "@/lib/queue";
-
-// Calculate delay in milliseconds from now until scheduledAt
-const delay = new Date(scheduledAt).getTime() - Date.now();
-
-await videoQueue.add(
-  "upload-video",
-  { videoId: newVideo.id },
-  { delay: Math.max(delay, 0) } // BullMQ waits 'delay' ms before processing
-);
-```
-
-> BullMQ stores the job in Redis with the delay. When the time comes, it
-> processes the job automatically — even if your server restarted in between.
+### 5.3 Sidebar Updates
+- If a platform is connected, its corresponding icon appears in the main navigation.
+- If not connected, the user is prompted to visit the Hub.
 
 ---
 
-## Phase 6 — Environment Variables (Complete)
+## Phase 6 — YouTube Scheduling Pipeline
 
-Create a `.env.local` file in the root with ALL variables:
+### 6.1 Goal
+Migrate the existing upload form and API logic into the specific `youtube/` route.
 
-```env
-# Next Auth
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=generate_with_openssl_rand_hex_32
-
-# Google OAuth
-GOOGLE_CLIENT_ID=from_google_cloud_console
-GOOGLE_CLIENT_SECRET=from_google_cloud_console
-
-# Database (PostgreSQL)
-DATABASE_URL=postgresql://user:password@host:5432/manageme
-
-# UploadThing Storage
-UPLOADTHING_TOKEN=your_token_here
-
-# Upstash Redis (for BullMQ)
-UPSTASH_REDIS_URL=rediss://your-upstash-endpoint
-UPSTASH_REDIS_TOKEN=your-upstash-token
-```
+### 6.2 Implementation
+- **UI**: Move the current `UploadDropzone` and metadata form (Title, Bio, Tags, Privacy) to `app/(dashboard)/youtube/upload/page.tsx`.
+- **API Setup (`lib/youtube.ts`)**: Maintain the resumable upload logic via the `googleapis` package. Ensure it fetches the *correct* `refresh_token` from the `Account` table (the one bound to YouTube, not the login token).
+- **Enqueueing**: Upon submit, create the database record and queue a `youtube-upload` job in BullMQ set for `scheduledAt`.
 
 ---
 
-## Phase 7 — Running Locally
+## Phase 7 — Instagram Scheduling Pipeline
 
-```bash
-# 1. Install dependencies
-npm install
+### 7.1 Goal
+Build the new Instagram upload form and integrate the Facebook/Instagram Graph API for auto-publishing.
 
-# 2. Set up database
-npx prisma migrate dev --name init
+### 7.2 The Interface (`app/(dashboard)/instagram/upload/page.tsx`)
+- Let user choose Media Type: **Photo**, **Video**, or **Reel**.
+- **Media constraints**: Only allow JPEGs for photos within acceptable aspect ratios (4:5 to 1.91:1).
+- Ask for user Caption. (No privacy settings or tags input needed like YouTube).
 
-# 3. Start the development server
-npm run dev
-
-# 4. Open the app
-# http://localhost:3000
-```
-
----
-
-## Phase 8 — Deployment Checklist
-
-- [ ] Deploy PostgreSQL on [Railway](https://railway.app/) or [Neon](https://neon.tech/)
-- [ ] Deploy Redis on [Upstash](https://upstash.com/)
-- [ ] Set up R2 bucket on [Cloudflare](https://cloudflare.com/)
-- [ ] Deploy app to [Vercel](https://vercel.com/) — connect GitHub repo
-- [ ] Add all environment variables to Vercel project settings
-- [ ] Update Google OAuth redirect URI to production URL
-- [ ] Submit OAuth app for Google verification (required for public users)
-- [ ] Apply for YouTube API quota increase if needed
+### 7.3 Graph API Integration (`lib/instagram.ts`)
+Uploading to Instagram via API is a two-step process:
+1.  **Create Media Container**: Call `POST /{ig-user-id}/media` passing the `image_url` or `video_url` (from UploadThing), the `caption`, and specifying if it's a `REELS`.
+2.  **Publish Container**: Call `POST /{ig-user-id}/media_publish` passing the container ID returned from step 1.
+- *Note: Video containers require polling the container status to ensure it's ready before publishing.*
 
 ---
 
-## ⚠️ Important Notes
+## Phase 8 — The Scheduler Engine
 
-1. **Refresh Token** — The YouTube upload happens in the background (no user session).
-   We use the stored `refresh_token` from the database. This is why `access_type: "offline"`
-   and `prompt: "consent"` are mandatory in the Google provider config.
+### 8.1 Goal
+Set up Upstash Redis and configure a robust BullMQ worker that processes jobs precisely when `scheduledAt` arrives.
 
-2. **Large File Uploads** — Videos go directly from the browser to R2/S3 via pre-signed URLs.
-   They never pass through your Next.js server, avoiding timeouts and memory issues.
+### 8.2 Worker Logic (`lib/queue.ts`)
+- Connect to Redis.
+- Create central `social-publisher` Queue.
+- Worker intercepts jobs and branches logic:
+  ```typescript
+  if (job.name === 'youtube-upload') {
+      await uploadToYouTube(job.data.postId);
+  } else if (job.name === 'instagram-upload') {
+      await publishToInstagram(job.data.postId);
+  }
+  ```
+- Handles Error updates in the DB (`status = FAILED`, populated `errorMessage`) so the UI displays the failure reason to the user in their respective platform dashboard.
 
-3. **BullMQ Worker** — In production, the BullMQ worker needs to run as a long-running
-   process (not a serverless function). Consider running it as a separate service on Railway.
+---
 
-4. **OAuth Verification** — Google requires OAuth verification before your app can access
-   other users' YouTube channels. Submit for review after testing is complete.
-   Unverified apps are limited to 100 test users.
+## ⚠️ Important API Considerations
+
+1.  **Instagram Business/Creator Check**: Personal Instagram accounts cannot use auto-publish. We must verify account type during the Connection phase (Phase 3).
+2.  **Tokens**: Facebook/Instagram long-lived tokens expire after 60 days. The app needs a mechanism or prompt to refresh them. Google refresh tokens last indefinitely unless revoked.
+3.  **Local Hosting Issue**: When testing Instagram API locally (`localhost:3000`), the Graph API **requires** public URLs for media. UploadThing fulfills this requirement perfectly.
