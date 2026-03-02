@@ -4,26 +4,11 @@ import Link from "next/link";
 import { VideoRow } from "@/components/VideoRow";
 import { UnifiedPost } from "@/types";
 
-export default async function DashboardPage() {
+export default async function InstagramDashboardPage() {
     const session = await auth();
     const userId = session!.user.id;
 
-    const [ytPending, ytPublished, ytFailed, igPending, igPublished, igFailed] = await Promise.all([
-        // YouTube
-        prisma.youtubePost.findMany({
-            where: { userId, status: { in: ["PENDING", "UPLOADING"] } },
-            orderBy: { scheduledAt: "asc" },
-        }),
-        prisma.youtubePost.findMany({
-            where: { userId, status: "DONE" },
-            orderBy: { updatedAt: "desc" },
-        }),
-        prisma.youtubePost.findMany({
-            where: { userId, status: "FAILED" },
-            orderBy: { updatedAt: "desc" },
-        }),
-
-        // Instagram
+    const [igPending, igPublished, igFailed] = await Promise.all([
         prisma.instagramPost.findMany({
             where: { userId, status: { in: ["PENDING", "UPLOADING"] } },
             orderBy: { scheduledAt: "asc" },
@@ -38,14 +23,6 @@ export default async function DashboardPage() {
         }),
     ]);
 
-    const normalizeYT = (posts: typeof ytPending): UnifiedPost[] =>
-        posts.map(p => ({
-            id: p.id, platform: "YOUTUBE", title: p.title,
-            mediaType: p.videoType, status: p.status, scheduledAt: p.scheduledAt,
-            storageUrl: p.storageUrl, thumbnailUrl: p.thumbnailUrl,
-            errorMessage: p.errorMessage, platformId: p.youtubeId, privacy: p.privacy
-        }));
-
     const normalizeIG = (posts: typeof igPending): UnifiedPost[] =>
         posts.map(p => ({
             id: p.id, platform: "INSTAGRAM", title: p.caption || "Instagram Post",
@@ -54,14 +31,9 @@ export default async function DashboardPage() {
             errorMessage: p.errorMessage, platformId: p.instagramId
         }));
 
-    const pending = [...normalizeYT(ytPending), ...normalizeIG(igPending)]
-        .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
-
-    const published = [...normalizeYT(ytPublished), ...normalizeIG(igPublished)]
-        .sort((a, b) => b.scheduledAt.getTime() - a.scheduledAt.getTime());
-
-    const failed = [...normalizeYT(ytFailed), ...normalizeIG(igFailed)]
-        .sort((a, b) => b.scheduledAt.getTime() - a.scheduledAt.getTime());
+    const pending = normalizeIG(igPending);
+    const published = normalizeIG(igPublished);
+    const failed = normalizeIG(igFailed);
 
     return (
         <div className="p-6">
@@ -69,14 +41,14 @@ export default async function DashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-10">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight mb-2">
-                        Your Videos
+                        Instagram Schedule
                     </h1>
                     <p className="text-[var(--muted)] text-sm sm:text-base max-w-lg leading-relaxed">
-                        Manage your scheduled and published YouTube content.
+                        Manage your scheduled photos, videos, and Reels for Instagram.
                     </p>
                 </div>
-                <Link href="/upload" className="dark:bg-blue-950 bg-blue-500 text-white px-4 py-3 rounded-lg">
-                    + Schedule New Video
+                <Link href="/instagram-dashboard/upload" className="dark:bg-blue-950 bg-blue-500 text-white px-4 py-3 rounded-lg flex items-center gap-2">
+                    <span>+ Schedule Post</span>
                 </Link>
             </div>
 
@@ -92,9 +64,9 @@ export default async function DashboardPage() {
                 {pending.length === 0 ? (
                     <EmptyState
                         icon="📅"
-                        message="No scheduled uploads yet"
+                        message="No scheduled posts yet"
                         cta="Schedule your first post →"
-                        href="/upload"
+                        href="/instagram-dashboard/upload"
                     />
                 ) : (
                     <div className="flex flex-col gap-3">

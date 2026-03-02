@@ -16,11 +16,11 @@ export async function GET(req: NextRequest) {
 
     if (error) {
         console.error("YouTube OAuth error:", error);
-        return NextResponse.redirect(new URL("/dashboard?error=youtube_auth_failed", req.url));
+        return NextResponse.redirect(new URL("/youtube-dashboard?error=youtube_auth_failed", req.url));
     }
 
     if (!code || !state) {
-        return NextResponse.redirect(new URL("/dashboard?error=invalid_request", req.url));
+        return NextResponse.redirect(new URL("/youtube-dashboard?error=invalid_request", req.url));
     }
 
     try {
@@ -89,9 +89,9 @@ export async function GET(req: NextRequest) {
         });
 
         // Redirect back to the connections hub
-        return NextResponse.redirect(new URL("/dashboard/connect?success=youtube", req.url));
+        return NextResponse.redirect(new URL("/connect?success=youtube", req.url));
     } catch (err: any) {
         console.error("Failed to exchange YouTube token:", err);
-        return NextResponse.redirect(new URL("/dashboard/connect?error=youtube_exchange_failed", req.url));
+        return NextResponse.redirect(new URL("/connect?error=youtube_exchange_failed", req.url));
     }
 }

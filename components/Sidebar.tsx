@@ -8,13 +8,14 @@ import { useUpload } from "@/contexts/UploadContext";
 type NavItem = { href: string; label: string; icon: string; disabled?: boolean };
 
 const navMain: NavItem[] = [
-    { href: "/dashboard", label: "Dashboard", icon: "📊" },
-    { href: "/dashboard/connect", label: "Connections", icon: "🔗" },
+    { href: "/youtube-dashboard", label: "YouTube Hub", icon: "🎬" },
+    { href: "/instagram-dashboard", label: "Instagram Hub", icon: "📸" },
+    { href: "/connect", label: "Connections", icon: "🔗" },
 ];
 
 const navUpload: NavItem[] = [
-    { href: "/upload", label: "YouTube Upload", icon: "🎬" },
-    { href: "/upload/instagram", label: "Instagram Upload", icon: "📸" },
+    { href: "/youtube-dashboard/upload", label: "YouTube Upload", icon: "⬆️" },
+    { href: "/instagram-dashboard/upload", label: "Instagram Upload", icon: "⬆️" },
 ];
 
 interface SidebarProps {

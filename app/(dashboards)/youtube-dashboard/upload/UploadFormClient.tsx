@@ -304,7 +304,7 @@ export default function UploadForm({ channelName }: { channelName: string }) {
             });
             if (!res.ok) throw new Error("Failed to save video");
             setSubmitStatus("done");
-            setTimeout(() => router.push("/dashboard"), 1500);
+            setTimeout(() => router.push("/youtube-dashboard"), 1500);
         } catch (err: unknown) {
             setSubmitStatus("error");
             setError(err instanceof Error ? err.message : "Something went wrong.");

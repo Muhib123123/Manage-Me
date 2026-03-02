@@ -293,7 +293,7 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
             });
             if (!res.ok) throw new Error("Failed to save post");
             setSubmitStatus("done");
-            setTimeout(() => router.push("/dashboard/instagram"), 1500);
+            setTimeout(() => router.push("/instagram-dashboard"), 1500);
         } catch (err: unknown) {
             setSubmitStatus("error");
             setError(err instanceof Error ? err.message : "Something went wrong.");

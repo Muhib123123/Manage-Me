@@ -16,11 +16,11 @@ export async function GET(req: Request) {
 
     if (error) {
         console.error("Facebook Auth Error:", error_description);
-        return NextResponse.redirect(new URL(`/dashboard/connect?error=${encodeURIComponent(error_description || "Authentication failed")}`, req.url));
+        return NextResponse.redirect(new URL(`/connect?error=${encodeURIComponent(error_description || "Authentication failed")}`, req.url));
     }
 
     if (!code) {
-        return NextResponse.redirect(new URL(`/dashboard/connect?error=No+authorization+code+provided`, req.url));
+        return NextResponse.redirect(new URL(`/connect?error=No+authorization+code+provided`, req.url));
     }
 
     const clientId = process.env.AUTH_FACEBOOK_ID!;
@@ -123,10 +123,10 @@ export async function GET(req: Request) {
         });
 
         // 7. Successful redirect back to the hub
-        return NextResponse.redirect(new URL(`/dashboard/connect?success=Instagram`, req.url));
+        return NextResponse.redirect(new URL(`/connect?success=Instagram`, req.url));
 
     } catch (err: any) {
         console.error("Error setting up Instagram connection:", err);
-        return NextResponse.redirect(new URL(`/dashboard/connect?error=${encodeURIComponent(err.message || "Failed to connect to Instagram")}`, req.url));
+        return NextResponse.redirect(new URL(`/connect?error=${encodeURIComponent(err.message || "Failed to connect to Instagram")}`, req.url));
     }
 }

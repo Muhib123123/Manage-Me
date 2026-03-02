@@ -44,6 +44,7 @@ Phase 5 → Unified Dashboard UI & Routing
 Phase 6 → YouTube Scheduling Pipeline (UI + API Integration)
 Phase 7 → Instagram Scheduling Pipeline (UI + Graph API Integration)
 Phase 8 → The Scheduler Engine (BullMQ Workers & Redis)
+Phase 9 → Dashboard Separation & Restyling
 ```
 
 ---
@@ -114,13 +115,13 @@ Refactor the UI layout to support navigating deeply into specific platform works
 
 ### 5.2 Workspace Routing
 ```
-app/(dashboard)/
+app/(dashboards)/
 ├── connect/              ← The Hub
 ├── layout.tsx            ← Dynamic Sidebar based on connected accounts
-├── youtube/
+├── youtube-dashboard/
 │   ├── page.tsx          ← Sub-dashboard (Pending/Published YouTube videos)
 │   └── upload/page.tsx   ← YouTube specific upload form
-└── instagram/
+└── instagram-dashboard/
     ├── page.tsx          ← Sub-dashboard (Pending/Published IG posts)
     └── upload/page.tsx   ← Instagram specific upload form
 ```
@@ -180,6 +181,18 @@ Set up Upstash Redis and configure a robust BullMQ worker that processes jobs pr
 - Handles Error updates in the DB (`status = FAILED`, populated `errorMessage`) so the UI displays the failure reason to the user in their respective platform dashboard.
 
 ---
+
+## Phase 9 — Dashboard Separation & Restyling
+
+### 9.1 Goal
+Completely separate the YouTube and Instagram workspaces into distinct top-level routes (`/youtube-dashboard` and `/instagram-dashboard`) to treat both platforms as primary tools rather than sub-pages. Sync the styling so both look identically premium.
+
+### 9.2 Route Restructuring
+- Move `app/dashboard/layout.tsx` to `app/(dashboards)/layout.tsx` so both paths share the Sidebar.
+- Move `app/dashboard/connect` to `app/(dashboards)/connect`.
+- Rename `app/dashboard` (the YouTube UI) to `app/(dashboards)/youtube-dashboard`.
+- Move `app/upload` into `app/(dashboards)/youtube-dashboard/upload`.
+- Move `app/dashboard/instagram` to `app/(dashboards)/instagram-dashboard`.
 
 ## ⚠️ Important API Considerations
 

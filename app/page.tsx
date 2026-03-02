@@ -6,7 +6,7 @@ export default async function Home() {
 
   // If logged in → go to dashboard, otherwise → go to login
   if (session) {
-    redirect("/dashboard");
+    redirect("/youtube-dashboard");
   } else {
     redirect("/login");
   }
