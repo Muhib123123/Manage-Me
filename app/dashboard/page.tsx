@@ -66,22 +66,22 @@ export default async function DashboardPage() {
     return (
         <div className="p-6">
             {/* ── Page Header ───────────────────────────── */}
-            <div className="flex items-start justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-10">
                 <div>
-                    <h1 className="text-2xl font-bold text-[var(--text)] tracking-tight mb-1">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight mb-2">
                         Your Videos
                     </h1>
-                    <p className="text-[var(--muted)] text-sm">
+                    <p className="text-[var(--muted)] text-sm sm:text-base max-w-lg leading-relaxed">
                         Manage your scheduled and published YouTube content.
                     </p>
                 </div>
-                <Link href="/upload" className="btn-primary shrink-0 ml-4">
+                <Link href="/upload" className="dark:bg-blue-950 bg-blue-500 text-white px-4 py-3 rounded-lg">
                     + Schedule New Video
                 </Link>
             </div>
 
             {/* ── Stats bar ─────────────────────────────── */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
                 <StatCard label="Scheduled" value={pending.length} color="blue" />
                 <StatCard label="Published" value={published.length} color="green" />
                 <StatCard label="Failed" value={failed.length} color="red" />

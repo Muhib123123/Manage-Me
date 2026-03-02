@@ -62,114 +62,113 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
     return (
         <div
             className={[
-                "flex items-center gap-4 p-4 bg-[var(--surface)] rounded-xl border border-[var(--border-solid)]",
+                "flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-[var(--surface)] rounded-xl border border-[var(--border-solid)]",
                 "border-l-[3px]", leftBorder,
                 "shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)]",
             ].join(" ")}
         >
-            {/* Thumbnail / Video preview */}
-            <div className="w-[88px] h-[56px] rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 relative">
-                {post.thumbnailUrl ? (
-                    // Show uploaded thumbnail image
-                    <img
-                        src={post.thumbnailUrl}
-                        alt={post.title}
-                        className="w-full h-full object-cover"
-                    />
-                ) : !videoError && post.mediaType !== "PHOTO" ? (
-                    // Show first frame of video using <video preload="metadata">
-                    <video
-                        src={post.storageUrl}
-                        preload="metadata"
-                        muted
-                        playsInline
-                        className="w-full h-full object-cover"
-                        onError={() => setVideoError(true)}
-                    />
-                ) : post.mediaType === "PHOTO" ? (
-                    <img
-                        src={post.storageUrl}
-                        alt={post.title}
-                        className="w-full h-full object-cover"
-                    />
-                ) : (
-                    // Fallback icon
-                    <div className="w-full h-full flex items-center justify-center text-2xl">
-                        {post.platform === "INSTAGRAM"
-                            ? "📸"
-                            : (post.mediaType === "short" ? "🩳" : "📹")}
-                    </div>
-                )}
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+                {/* Thumbnail / Video preview */}
+                <div className="w-[88px] h-[56px] rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 relative">
+                    {post.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={post.thumbnailUrl}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : !videoError && post.mediaType !== "PHOTO" ? (
+                        <video
+                            src={post.storageUrl}
+                            preload="metadata"
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                            onError={() => setVideoError(true)}
+                        />
+                    ) : post.mediaType === "PHOTO" ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={post.storageUrl}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-2xl">
+                            {post.platform === "INSTAGRAM"
+                                ? "📸"
+                                : (post.mediaType === "short" ? "🩳" : "📹")}
+                        </div>
+                    )}
 
-                {/* Video type / Platform badge overlay */}
-                <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-1">
-                    <span>{post.platform === "YOUTUBE" ? "YT" : "IG"}</span>
-                    <span className="opacity-50">|</span>
-                    <span>
-                        {post.platform === "INSTAGRAM"
-                            ? post.mediaType
-                            : (post.mediaType === "short" ? "SHORT" : "VIDEO")}
-                    </span>
+                    <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-1">
+                        <span>{post.platform === "YOUTUBE" ? "YT" : "IG"}</span>
+                        <span className="opacity-50">|</span>
+                        <span>
+                            {post.platform === "INSTAGRAM"
+                                ? post.mediaType
+                                : (post.mediaType === "short" ? "SHORT" : "VIDEO")}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-[var(--text)] truncate mb-0.5">
+                        {post.title}
+                    </p>
+                    <p className="text-[var(--muted)] text-[11px] sm:text-xs">
+                        {post.privacy && `${post.privacy} · `}
+                        {post.status === "DONE"
+                            ? `Published ${new Date(post.scheduledAt).toLocaleDateString()}`
+                            : `Scheduled: ${new Date(post.scheduledAt).toLocaleString()}`}
+                    </p>
                 </div>
             </div>
 
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-[var(--text)] truncate mb-0.5 flex items-center gap-2">
-                    {post.title}
-                </p>
-                <p className="text-[var(--muted)] text-xs">
-                    {post.privacy && `${post.privacy} · `}
-                    {post.status === "DONE"
-                        ? `Published ${new Date(post.scheduledAt).toLocaleDateString()}`
-                        : `Scheduled: ${new Date(post.scheduledAt).toLocaleString()}`}
-                </p>
-                {showError && post.errorMessage && (
-                    <p className="text-red-600 text-xs mt-1">⚠ {post.errorMessage}</p>
-                )}
-                {uploadError && (
-                    <p className="text-red-600 text-xs mt-1">⚠ {uploadError}</p>
-                )}
+            <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 mt-1 sm:mt-0">
+                <span
+                    className="px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold shrink-0 border"
+                    style={{ background: meta.bg, color: meta.color, borderColor: meta.border }}
+                >
+                    {uploading ? "Uploading…" : meta.label}
+                </span>
+
+                <div className="flex gap-2 shrink-0">
+                    {liveUrl && (
+                        <a
+                            href={liveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`px-3 py-1.5 rounded-lg text-white text-[11px] sm:text-xs font-semibold no-underline transition-colors ${post.platform === "YOUTUBE" ? "bg-red-600 hover:bg-red-700" : "bg-fuchsia-600 hover:bg-fuchsia-700"
+                                }`}
+                        >
+                            ▶ View
+                        </a>
+                    )}
+                    {(post.status === "PENDING" || post.status === "FAILED") && !uploading && (
+                        <button
+                            onClick={handleUploadNow}
+                            className="px-3 py-1.5 rounded-lg bg-[var(--text)] text-[var(--surface)] text-[11px] sm:text-xs font-semibold hover:opacity-90 transition-opacity"
+                        >
+                            ⬆ Now
+                        </button>
+                    )}
+                    {post.status !== "DONE" && post.status !== "UPLOADING" && (
+                        <button
+                            onClick={handleDelete}
+                            className="px-3 py-1.5 rounded-lg border border-[var(--border-solid)] bg-transparent text-[var(--muted)] text-[11px] sm:text-xs font-medium cursor-pointer transition-all hover:text-red-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {/* Status badge */}
-            <span
-                className="px-2.5 py-1 rounded-full text-[11px] font-semibold shrink-0 border"
-                style={{ background: meta.bg, color: meta.color, borderColor: meta.border }}
-            >
-                {uploading ? "Uploading…" : meta.label}
-            </span>
-
-            {/* Actions */}
-            <div className="flex gap-2 shrink-0">
-                {liveUrl && (
-                    <a
-                        href={liveUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`px-3 py-1.5 rounded-lg text-white text-xs font-semibold no-underline transition-colors ${post.platform === "YOUTUBE" ? "bg-red-600 hover:bg-red-700" : "bg-fuchsia-600 hover:bg-fuchsia-700"
-                            }`}
-                    >
-                        ▶ View
-                    </a>
-                )}
-                {(post.status === "PENDING" || post.status === "FAILED") && !uploading && (
-                    <button
-                        onClick={handleUploadNow}
-                        className="px-3 py-1.5 rounded-lg bg-[var(--text)] text-[var(--surface)] text-xs font-semibold hover:opacity-90 transition-opacity"
-                    >
-                        ⬆ Upload Now
-                    </button>
-                )}
-                {post.status !== "DONE" && post.status !== "UPLOADING" && (
-                    <button
-                        onClick={handleDelete}
-                        className="px-3 py-1.5 rounded-lg border border-[var(--border-solid)] bg-transparent text-[var(--muted)] text-xs font-medium cursor-pointer transition-all hover:text-red-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20"
-                    >
-                        ✕ Cancel
-                    </button>
-                )}
-            </div>
+            {(showError && post.errorMessage) || uploadError ? (
+                <div className="w-full text-red-600 text-[11px] sm:text-xs mt-1 px-1">
+                    ⚠ {uploadError || post.errorMessage}
+                </div>
+            ) : null}
         </div>
     );
 }

@@ -43,7 +43,7 @@ function UploadedMediaCard({
     onVideoLoaded?: () => void;
 }) {
     return (
-        <div className="rounded-xl w-[300px] lg:w-[400px] overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group transition-all duration-300 hover:shadow-[var(--shadow-md)]">
+        <div className="rounded-xl w-full max-w-[400px] overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group transition-all duration-300 hover:shadow-[var(--shadow-md)]">
             {/* Preview */}
             <div className="relative aspect-video bg-[var(--surface-2)] overflow-hidden">
                 {kind === "video" ? (
@@ -165,7 +165,7 @@ function UploadZone({
     return (
         <div className="flex flex-col">
             {uploading && (
-                <div className="rounded-xl w-[300px] lg:w-[400px] border border-[var(--border-solid)] bg-[var(--surface-2)] p-6 flex flex-col justify-center h-[200px]">
+                <div className="rounded-xl w-full max-w-[400px] border border-[var(--border-solid)] bg-[var(--surface-2)] p-6 flex flex-col justify-center h-[200px]">
                     <div className="flex items-end justify-between mb-4">
                         <span className="text-sm font-semibold text-[var(--text)]">Uploading</span>
                         <span className="text-2xl font-light text-[var(--primary)]">{progress}%</span>
@@ -181,7 +181,7 @@ function UploadZone({
             )}
 
             {!uploading && (
-                <div ref={wrapperRef} className="w-[300px] lg:w-[400px] [&>div]:!border-[var(--border-solid)] [&>div]:!bg-[var(--surface-2)] hover:[&>div]:!border-[var(--text)] transition-colors duration-300">
+                <div ref={wrapperRef} className="w-full max-w-[400px] [&>div]:!border-[var(--border-solid)] [&>div]:!bg-[var(--surface-2)] hover:[&>div]:!border-[var(--text)] transition-colors duration-300">
                     <UploadDropzone
                         endpoint={endpoint}
                         appearance={{
@@ -362,7 +362,7 @@ export default function UploadForm({ channelName }: { channelName: string }) {
                 {videoType === "video" && (
                     <div className="flex items-start gap-4 px-5 py-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-solid)] text-sm">
                         <span className="text-lg shrink-0 mt-0.5">ℹ️</span>
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-1.5 lg:text-base">
                             <p className="font-semibold text-[var(--text)]">
                                 Verification required for videos over 15 minutes
                             </p>
