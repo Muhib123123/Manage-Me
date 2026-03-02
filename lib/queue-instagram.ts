@@ -1,6 +1,5 @@
 import { Queue, Worker } from "bullmq";
 import IORedis from "ioredis";
-import { uploadToInstagram } from "./instagram";
 import { prisma } from "./prisma";
 
 // Use Upstash Redis URL from env
@@ -37,14 +36,33 @@ if (!globalForWorker.instagramWorker && redisUrl) {
             });
 
             try {
-                const instagramId = await uploadToInstagram(postId);
+                const post = await prisma.instagramPost.findUnique({
+                    where: { id: postId },
+                });
+
+                if (!post) throw new Error("Instagram post not found");
+
+                const isReel = post.mediaType === "REEL";
+                const isVideo = post.mediaType === "VIDEO" || isReel;
+
+                let igMediaId;
+
+                const { uploadInstagramPhoto, uploadInstagramVideo } = await import("./instagram");
+
+                if (isVideo) {
+                    const res = await uploadInstagramVideo(post.userId, post.storageUrl, post.caption || "", isReel);
+                    igMediaId = res.id;
+                } else {
+                    const res = await uploadInstagramPhoto(post.userId, post.storageUrl, post.caption || "");
+                    igMediaId = res.id;
+                }
 
                 // Mark as done
                 await prisma.instagramPost.update({
                     where: { id: postId },
                     data: {
                         status: "DONE",
-                        instagramId: instagramId,
+                        instagramId: igMediaId,
                     },
                 });
 

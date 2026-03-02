@@ -20,9 +20,10 @@ const connection = new IORedis(redisUrl || "redis://localhost:6379", {
 });
 
 export const videoQueue = new Queue("youtube-uploads", { connection });
+export const instagramQueue = new Queue("instagram-uploads", { connection });
 
 // Prevent multiple workers in development HMR
-const globalForWorker = global as unknown as { videoWorker?: Worker };
+const globalForWorker = global as unknown as { videoWorker?: Worker; instagramWorker?: Worker };
 
 if (!globalForWorker.videoWorker && redisUrl) {
     globalForWorker.videoWorker = new Worker(
@@ -67,4 +68,67 @@ if (!globalForWorker.videoWorker && redisUrl) {
     });
 }
 
+if (!globalForWorker.instagramWorker && redisUrl) {
+    globalForWorker.instagramWorker = new Worker(
+        "instagram-uploads",
+        async (job) => {
+            const { postId } = job.data;
+
+            // Mark as uploading
+            await prisma.instagramPost.update({
+                where: { id: postId },
+                data: { status: "UPLOADING" },
+            });
+
+            try {
+                const post = await prisma.instagramPost.findUnique({
+                    where: { id: postId },
+                });
+
+                if (!post) throw new Error("Instagram post not found");
+
+                const isReel = post.mediaType === "REEL";
+                const isVideo = post.mediaType === "VIDEO" || isReel;
+
+                let igMediaId;
+
+                const { uploadInstagramPhoto, uploadInstagramVideo } = await import("./instagram");
+
+                if (isVideo) {
+                    const res = await uploadInstagramVideo(post.userId, post.storageUrl, post.caption || "", isReel);
+                    igMediaId = res.id;
+                } else {
+                    const res = await uploadInstagramPhoto(post.userId, post.storageUrl, post.caption || "");
+                    igMediaId = res.id;
+                }
+
+                // Mark as done
+                await prisma.instagramPost.update({
+                    where: { id: postId },
+                    data: {
+                        status: "DONE",
+                        instagramId: igMediaId,
+                    },
+                });
+
+                console.log(`✅ Job ${job.id}: Instagram Post ${postId} uploaded successfully!`);
+            } catch (error: any) {
+                // Mark as failed with error message
+                await prisma.instagramPost.update({
+                    where: { id: postId },
+                    data: { status: "FAILED", errorMessage: error?.message || "Unknown error" },
+                });
+                console.error(`❌ Job ${job.id}: Instagram Post ${postId} upload failed:`, error);
+                throw error; // Re-throw so BullMQ marks job as failed
+            }
+        },
+        { connection, concurrency: 1 }
+    );
+
+    globalForWorker.instagramWorker.on("failed", (job, err) => {
+        console.error(`BullMQ Instagram Job ${job?.id} failed:`, err);
+    });
+}
+
 export const videoWorker = globalForWorker.videoWorker;
+export const instagramWorker = globalForWorker.instagramWorker;

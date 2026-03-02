@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
+import Facebook from "next-auth/providers/facebook";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 
@@ -16,6 +17,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     scope: "openid email profile",
                 },
             },
+        }),
+        Facebook({
+            clientId: process.env.AUTH_FACEBOOK_ID,
+            clientSecret: process.env.AUTH_FACEBOOK_SECRET,
+            authorization: {
+                params: {
+                    scope: "instagram_basic instagram_content_publish pages_show_list pages_read_engagement business_management",
+                }
+            }
         }),
     ],
     callbacks: {

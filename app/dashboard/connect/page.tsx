@@ -17,6 +17,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
     const ytConnection = connections.find(c => c.platform === "YOUTUBE");
 
     const hasInstagram = connections.some(c => c.platform === "INSTAGRAM");
+    const igConnection = connections.find(c => c.platform === "INSTAGRAM");
 
     return (
         <div className="p-6 md:p-10 max-w-4xl mx-auto">
@@ -93,31 +94,53 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                     )}
                 </div>
 
-                {/* INSTAGRAM CONNECTION CARD (Placeholder) */}
+                {/* INSTAGRAM CONNECTION CARD */}
                 <div className="flex flex-col border-t border-[var(--border-solid)] pt-6 gap-6">
                     <div className="flex items-start justify-between">
                         <div>
-                            <h2 className="text-xl md:text-2xl font-bold tracking-tight text-[var(--muted)] mb-1.5 opacity-60">
+                            <h2 className="text-xl md:text-2xl font-bold tracking-tight text-[var(--text)] mb-1.5 ">
                                 Instagram
                             </h2>
-                            <p className="text-xs text-[var(--muted)] uppercase tracking-wide font-semibold opacity-60">
-                                Coming Soon
+                            <p className="text-xs text-[var(--muted)] uppercase tracking-wide font-semibold ">
+                                {hasInstagram ? <span className="text-emerald-500">Connected</span> : <span className="text-[var(--muted)]">Not Connected</span>}
                             </p>
                         </div>
                     </div>
 
-                    <p className="text-sm text-[var(--muted)] leading-relaxed h-[60px] opacity-60">
-                        Connect your Instagram Professional account to schedule photos and reels. Support for Instagram is currently in development.
+                    <p className="text-sm text-[var(--muted)] leading-relaxed h-[60px] ">
+                        Connect your Instagram Professional account to schedule photos and reels. You must link your account to a Facebook Page first.
                     </p>
 
-                    <div>
-                        <button
-                            disabled
-                            className="inline-flex w-full items-center justify-center border border-dashed border-[var(--border-solid)] text-[var(--muted)] px-6 py-3.5 rounded-lg text-sm font-medium cursor-not-allowed bg-[var(--surface-2)]/50"
-                        >
-                            Under Construction
-                        </button>
-                    </div>
+                    {hasInstagram && igConnection ? (
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center gap-4 bg-[var(--surface-2)] p-4 rounded-xl border border-[var(--border-solid)]">
+                                {igConnection.platformAvatar ? (
+                                    <img src={igConnection.platformAvatar} alt="Profile Avatar" className="w-10 h-10 rounded-full border border-[var(--border-solid)]" />
+                                ) : (
+                                    <div className="w-10 h-10 rounded-full bg-[var(--border-solid)] flex items-center justify-center text-xs font-medium text-[var(--text)]">IG</div>
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold truncate text-[var(--text)]">@{igConnection.platformName || "Instagram Account"}</p>
+                                    <p className="text-xs text-[var(--muted)] truncate mt-0.5">ID: {igConnection.platformId}</p>
+                                </div>
+                            </div>
+                            <Link
+                                href="/api/instagram/connect"
+                                className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors inline-flex justify-center py-2"
+                            >
+                                Reconnect / Switch Account
+                            </Link>
+                        </div>
+                    ) : (
+                        <div>
+                            <Link
+                                href="/api/instagram/connect"
+                                className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-300 text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium cursor-pointer"
+                            >
+                                Connect Instagram
+                            </Link>
+                        </div>
+                    )}
                 </div>
 
             </div>
