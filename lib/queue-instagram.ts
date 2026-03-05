@@ -50,10 +50,10 @@ if (!globalForWorker.instagramWorker && redisUrl) {
                 const { uploadInstagramPhoto, uploadInstagramVideo } = await import("./instagram");
 
                 if (isVideo) {
-                    const res = await uploadInstagramVideo(post.userId, post.storageUrl, post.caption || "", isReel);
+                    const res = await uploadInstagramVideo(post.userId, post.mediaUrls, post.caption || "", isReel);
                     igMediaId = res.id;
                 } else {
-                    const res = await uploadInstagramPhoto(post.userId, post.storageUrl, post.caption || "");
+                    const res = await uploadInstagramPhoto(post.userId, post.mediaUrls, post.caption || "");
                     igMediaId = res.id;
                 }
 

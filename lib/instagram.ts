@@ -12,12 +12,30 @@ async function fetchGraphApi(endpoint: string, options: RequestInit = {}) {
     return data;
 }
 
+// After publishing, fetch the post permalink and extract the shortcode from the URL.
+// Instagram web URLs look like: https://www.instagram.com/p/{shortcode}/
+// We store the shortcode so the "View" button can construct the correct link.
+async function fetchShortcode(mediaId: string, accessToken: string): Promise<string> {
+    try {
+        const data = await fetchGraphApi(`${mediaId}?fields=permalink&access_token=${accessToken}`);
+        if (data.permalink) {
+            // Extract shortcode from URL: .../p/{shortcode}/
+            const match = data.permalink.match(/\/p\/([^/]+)/);
+            if (match) return match[1];
+        }
+    } catch {
+        // If fetching shortcode fails, fall back to the raw numeric ID
+        console.warn(`Could not fetch permalink for media ${mediaId}`);
+    }
+    return mediaId; // fallback — View URL will be broken but at least it won't crash
+}
+
 /**
  * Uploads a photo to Instagram
  */
 export async function uploadInstagramPhoto(
     userId: string,
-    imageUrl: string,
+    mediaUrls: string[],
     caption?: string
 ) {
     // 1. Get the user's Instagram connection and access token
@@ -37,28 +55,61 @@ export async function uploadInstagramPhoto(
     const { platformId: instagramAccountId, accessToken } = connection;
 
     try {
-        // 2. Create the Item Container
-        // POST /{ig-user-id}/media?image_url={image-url}&caption={caption}
+        if (mediaUrls.length === 1) {
+            // SINGLE PHOTO PIPELINE
+            const imageUrl = mediaUrls[0];
+            let containerUrl = `${instagramAccountId}/media?image_url=${encodeURIComponent(imageUrl)}&access_token=${accessToken}`;
 
-        let containerUrl = `${instagramAccountId}/media?image_url=${encodeURIComponent(imageUrl)}&access_token=${accessToken}`;
+            if (caption) {
+                containerUrl += `&caption=${encodeURIComponent(caption)}`;
+            }
 
-        if (caption) {
-            containerUrl += `&caption=${encodeURIComponent(caption)}`;
+            const containerResponse = await fetchGraphApi(containerUrl, { method: "POST" });
+            const creationId = containerResponse.id;
+
+            if (!creationId) {
+                throw new Error("Failed to create media container");
+            }
+
+            const publishUrl = `${instagramAccountId}/media_publish?creation_id=${creationId}&access_token=${accessToken}`;
+            const publishResponse = await fetchGraphApi(publishUrl, { method: "POST" });
+            const shortcode = await fetchShortcode(publishResponse.id, accessToken);
+            return { success: true, id: shortcode };
+
+        } else {
+            // CAROUSEL PIPELINE
+            const itemContainerIds = [];
+
+            // 1. Create individual containers for each image
+            for (const url of mediaUrls) {
+                const itemUrl = `${instagramAccountId}/media?image_url=${encodeURIComponent(url)}&is_carousel_item=true&access_token=${accessToken}`;
+                const itemResponse = await fetchGraphApi(itemUrl, { method: "POST" });
+
+                if (!itemResponse.id) throw new Error("Failed to create individual carousel item container");
+                itemContainerIds.push(itemResponse.id);
+            }
+
+            // 2. Create the master Carousel container
+            const childrenString = itemContainerIds.join(",");
+            let carouselUrl = `${instagramAccountId}/media?media_type=CAROUSEL&children=${encodeURIComponent(childrenString)}&access_token=${accessToken}`;
+
+            if (caption) {
+                carouselUrl += `&caption=${encodeURIComponent(caption)}`;
+            }
+
+            const carouselResponse = await fetchGraphApi(carouselUrl, { method: "POST" });
+            const carouselCreationId = carouselResponse.id;
+
+            if (!carouselCreationId) {
+                throw new Error("Failed to create master carousel container");
+            }
+
+            // 3. Publish the Carousel container
+            const publishUrl = `${instagramAccountId}/media_publish?creation_id=${carouselCreationId}&access_token=${accessToken}`;
+            const publishResponse = await fetchGraphApi(publishUrl, { method: "POST" });
+            const shortcode = await fetchShortcode(publishResponse.id, accessToken);
+            return { success: true, id: shortcode };
         }
-
-        const containerResponse = await fetchGraphApi(containerUrl, { method: "POST" });
-        const creationId = containerResponse.id;
-
-        if (!creationId) {
-            throw new Error("Failed to create media container");
-        }
-
-        // 3. Publish the Container
-        // POST /{ig-user-id}/media_publish?creation_id={creation-id}
-        const publishUrl = `${instagramAccountId}/media_publish?creation_id=${creationId}&access_token=${accessToken}`;
-        const publishResponse = await fetchGraphApi(publishUrl, { method: "POST" });
-
-        return { success: true, id: publishResponse.id };
 
     } catch (error: any) {
         console.error("Instagram Photo Upload Error:", error);
@@ -73,7 +124,7 @@ export async function uploadInstagramPhoto(
  */
 export async function uploadInstagramVideo(
     userId: string,
-    videoUrl: string,
+    mediaUrls: string[],
     caption?: string,
     isReel: boolean = false
 ) {
@@ -93,8 +144,12 @@ export async function uploadInstagramVideo(
     const { platformId: instagramAccountId, accessToken } = connection;
 
     try {
-        // 1. Create the Video Container
-        let containerUrl = `${instagramAccountId}/media?video_url=${encodeURIComponent(videoUrl)}&media_type=${isReel ? "REELS" : "VIDEO"}&access_token=${accessToken}`;
+        const videoUrl = mediaUrls[0];
+
+        // ⚠️ Instagram deprecated media_type=VIDEO for standalone feed posts in Nov 2023.
+        // ALL video uploads (both regular "Video" and Reels) must now use media_type=REELS.
+        // Source: https://developers.facebook.com/docs/instagram-api/reference/ig-user/media
+        let containerUrl = `${instagramAccountId}/media?video_url=${encodeURIComponent(videoUrl)}&media_type=REELS&access_token=${accessToken}`;
 
         if (caption) {
             containerUrl += `&caption=${encodeURIComponent(caption)}`;
@@ -104,38 +159,40 @@ export async function uploadInstagramVideo(
         const creationId = containerResponse.id;
 
         if (!creationId) {
-            throw new Error("Failed to create video media container");
+            throw new Error("Failed to create video media container — no ID returned from API");
         }
 
         // 2. Poll the container status until it finishes processing
+        //    Instagram returns status_code: IN_PROGRESS | FINISHED | ERROR | EXPIRED | PUBLISHED
         let isReady = false;
         let attempts = 0;
-        const maxAttempts = 30; // Max 5 minutes (10s * 30)
+        const maxAttempts = 36; // Max 6 minutes (10s * 36)
 
         while (!isReady && attempts < maxAttempts) {
-            const statusUrl = `${creationId}?fields=status_code&access_token=${accessToken}`;
+            await new Promise(resolve => setTimeout(resolve, 10000));
+            const statusUrl = `${creationId}?fields=status_code,status&access_token=${accessToken}`;
             const statusResponse = await fetchGraphApi(statusUrl);
+
+            console.log(`🎥 Video container ${creationId} status: ${statusResponse.status_code} (attempt ${attempts + 1})`);
 
             if (statusResponse.status_code === 'FINISHED') {
                 isReady = true;
-            } else if (statusResponse.status_code === 'ERROR') {
-                throw new Error("Video processing failed on Instagram's servers.");
-            } else {
-                // Wait 10 seconds before polling again
-                await new Promise(resolve => setTimeout(resolve, 10000));
-                attempts++;
+            } else if (statusResponse.status_code === 'ERROR' || statusResponse.status_code === 'EXPIRED') {
+                throw new Error(`Video processing failed with status: ${statusResponse.status_code}. Check your video format (MP4, H.264 codec) and dimensions.`);
             }
+            // else IN_PROGRESS → keep polling
+            attempts++;
         }
 
         if (!isReady) {
-            throw new Error("Video processing timed out.");
+            throw new Error("Video processing timed out after 6 minutes. Try a shorter or smaller video.");
         }
 
         // 3. Publish the Container
         const publishUrl = `${instagramAccountId}/media_publish?creation_id=${creationId}&access_token=${accessToken}`;
         const publishResponse = await fetchGraphApi(publishUrl, { method: "POST" });
-
-        return { success: true, id: publishResponse.id };
+        const shortcode = await fetchShortcode(publishResponse.id, accessToken);
+        return { success: true, id: shortcode };
 
     } catch (error: any) {
         console.error("Instagram Video Upload Error:", error);

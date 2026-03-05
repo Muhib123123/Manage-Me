@@ -50,7 +50,7 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
 
     const handleDelete = async () => {
         if (!confirm(`Cancel and delete "${post.title}"?`)) return;
-        const apiRoute = post.platform === "YOUTUBE" ? "/api/videos" : "/api/instagram";
+        const apiRoute = post.platform === "YOUTUBE" ? "/api/videos" : "/api/instagram/posts";
         await fetch(`${apiRoute}?id=${post.id}`, { method: "DELETE" });
         router.refresh();
     };
@@ -125,6 +125,12 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
                 </div>
             </div>
 
+            {(showError && post.errorMessage) || uploadError ? (
+                <div className="w-full text-red-600 text-[11px] sm:text-xs mt-1 px-1 flex items-center justify-center">
+                    ⚠ {uploadError || post.errorMessage}
+                </div>
+            ) : null}
+
             <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 mt-1 sm:mt-0">
                 <span
                     className="px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold shrink-0 border"
@@ -164,11 +170,6 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
                 </div>
             </div>
 
-            {(showError && post.errorMessage) || uploadError ? (
-                <div className="w-full text-red-600 text-[11px] sm:text-xs mt-1 px-1">
-                    ⚠ {uploadError || post.errorMessage}
-                </div>
-            ) : null}
         </div>
     );
 }

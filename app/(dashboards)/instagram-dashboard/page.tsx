@@ -27,7 +27,7 @@ export default async function InstagramDashboardPage() {
         posts.map(p => ({
             id: p.id, platform: "INSTAGRAM", title: p.caption || "Instagram Post",
             mediaType: p.mediaType, status: p.status, scheduledAt: p.scheduledAt,
-            storageUrl: p.storageUrl, thumbnailUrl: null,
+            storageUrl: p.mediaUrls[0], thumbnailUrl: null,
             errorMessage: p.errorMessage, platformId: p.instagramId
         }));
 

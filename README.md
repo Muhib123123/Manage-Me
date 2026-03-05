@@ -45,6 +45,7 @@ Phase 6 → YouTube Scheduling Pipeline (UI + API Integration)
 Phase 7 → Instagram Scheduling Pipeline (UI + Graph API Integration)
 Phase 8 → The Scheduler Engine (BullMQ Workers & Redis)
 Phase 9 → Dashboard Separation & Restyling
+Phase 10 → Instagram Carousel Uploads
 ```
 
 ---

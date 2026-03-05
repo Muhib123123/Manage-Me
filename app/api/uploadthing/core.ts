@@ -18,9 +18,9 @@ export const ourFileRouter = {
             return { uploadedBy: metadata.userId, url: file.ufsUrl };
         }),
 
-    // Route for uploading thumbnail images
+    // Route for uploading thumbnail images (up to 10 max for Instagram Carousel)
     thumbnailUploader: f({
-        image: { maxFileSize: "8MB", maxFileCount: 1 },
+        image: { maxFileSize: "8MB", maxFileCount: 10 },
     })
         .middleware(async () => {
             const session = await auth();

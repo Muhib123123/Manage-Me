@@ -5,7 +5,8 @@ export type UnifiedPost = {
     mediaType: string;
     status: string;
     scheduledAt: Date;
-    storageUrl: string;
+    storageUrl: string; // The primary URL (for video or single photo)
+    mediaUrls?: string[]; // Array of URLs for carousels
     thumbnailUrl: string | null;
     errorMessage: string | null;
     platformId: string | null;

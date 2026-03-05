@@ -24,14 +24,14 @@ export async function POST(req: NextRequest) {
     const {
         caption,
         mediaType,
-        storageUrl,
+        mediaUrls,
         scheduledAt,
     } = body;
 
     // Basic validation
-    if (!storageUrl || !scheduledAt || !mediaType) {
+    if (!mediaUrls || !Array.isArray(mediaUrls) || mediaUrls.length === 0 || !scheduledAt || !mediaType) {
         return NextResponse.json(
-            { error: "Missing required fields: storageUrl, mediaType, scheduledAt" },
+            { error: "Missing required fields: mediaUrls, mediaType, scheduledAt" },
             { status: 400 }
         );
     }
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
             userId: session.user.id,
             caption: caption ?? "",
             mediaType,
-            storageUrl,
+            mediaUrls,
             scheduledAt: new Date(scheduledAt),
             status: "PENDING",
         },
@@ -84,9 +84,9 @@ export async function DELETE(req: NextRequest) {
     });
 
     if (!post) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    if (post.status !== "PENDING") {
+    if (post.status !== "PENDING" && post.status !== "FAILED") {
         return NextResponse.json(
-            { error: "Can only cancel PENDING posts" },
+            { error: "Can only cancel PENDING or FAILED posts" },
             { status: 400 }
         );
     }

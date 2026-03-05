@@ -147,7 +147,7 @@ model InstagramPost {
   caption String? @db.Text
 
   // Storage (UploadThing)
-  storageUrl String
+  mediaUrls String[]
 
   // Scheduling
   scheduledAt DateTime

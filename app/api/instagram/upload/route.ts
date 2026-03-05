@@ -8,7 +8,7 @@ export async function POST(req: Request) {
         const session = await auth();
 
         if (!session?.user?.id) {
-            return new NextResponse("Unauthorized", { status: 401 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         // Verify Instagram connection
@@ -17,14 +17,17 @@ export async function POST(req: Request) {
         });
 
         if (!connection) {
-            return new NextResponse("Instagram is not connected", { status: 400 });
+            return NextResponse.json({ error: "Instagram is not connected" }, { status: 400 });
         }
 
         const body = await req.json();
-        const { mediaType, caption, storageUrl, scheduledAt } = body;
+        const { mediaType, caption, mediaUrls, scheduledAt } = body;
 
-        if (!storageUrl || !scheduledAt || !mediaType) {
-            return new NextResponse("Missing required fields", { status: 400 });
+        if (!mediaUrls || !Array.isArray(mediaUrls) || mediaUrls.length === 0 || !scheduledAt || !mediaType) {
+            return NextResponse.json(
+                { error: "Missing required fields: mediaUrls, mediaType, scheduledAt" },
+                { status: 400 }
+            );
         }
 
         // Parse scheduling date
@@ -37,7 +40,7 @@ export async function POST(req: Request) {
                 userId: session.user.id,
                 mediaType, // PHOTO, VIDEO, or REEL
                 caption,
-                storageUrl,
+                mediaUrls,
                 scheduledAt: scheduledTime,
                 status: "PENDING",
             },
@@ -53,6 +56,6 @@ export async function POST(req: Request) {
         return NextResponse.json(post);
     } catch (error: any) {
         console.error("Instagram Upload API Error:", error);
-        return new NextResponse("Internal API Error", { status: 500 });
+        return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
     }
 }

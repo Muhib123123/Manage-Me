@@ -102,7 +102,6 @@ function UploadZone({
     hint,
     progress,
     uploading,
-    fileSize,
     onBeforeUpload,
     onProgress,
     onComplete,
@@ -113,10 +112,9 @@ function UploadZone({
     hint: string;
     progress: number;
     uploading: boolean;
-    fileSize: number;
     onBeforeUpload: (files: File[]) => File[];
     onProgress: (p: number) => void;
-    onComplete: (url: string) => void;
+    onComplete: (urls: string[]) => void;
     onError: (msg: string) => void;
 }) {
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -201,7 +199,9 @@ function UploadZone({
                         }}
                         onUploadProgress={(p) => onProgress(Math.round(p))}
                         onClientUploadComplete={(res) => {
-                            if (res?.[0]) onComplete(res[0].ufsUrl);
+                            if (res && res.length > 0) {
+                                onComplete(res.map(r => r.ufsUrl));
+                            }
                             onProgress(100);
                             hideBtn();
                         }}
@@ -222,14 +222,13 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
     const router = useRouter();
     const { setIsUploading } = useUpload();
 
-    const [mediaType, setMediaType] = useState<"PHOTO" | "VIDEO" | "REEL">("PHOTO");
+    const [mediaType, setMediaType] = useState<"PHOTO" | "REEL">("PHOTO");
 
     // Media upload state
-    const [mediaUrl, setMediaUrl] = useState("");
+    const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+    const [mediaFiles, setMediaFiles] = useState<{ name: string, size: number }[]>([]);
     const [mediaProgress, setMediaProgress] = useState(0);
     const [mediaUploading, setMediaUploading] = useState(false);
-    const [mediaFileSize, setMediaFileSize] = useState(0);
-    const [mediaFileName, setMediaFileName] = useState("");
     const [videoPreviewFrame, setVideoPreviewFrame] = useState("");
 
     // Form state
@@ -244,10 +243,9 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
 
     // Reset media when changing type between photo/video
     useEffect(() => {
-        setMediaUrl("");
+        setMediaUrls([]);
+        setMediaFiles([]);
         setMediaProgress(0);
-        setMediaFileSize(0);
-        setMediaFileName("");
         setVideoPreviewFrame("");
         setIsUploading(false);
     }, [mediaType, setIsUploading]);
@@ -273,7 +271,7 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
         e.preventDefault();
         setError("");
 
-        if (!mediaUrl) { setError("Please upload your media file."); return; }
+        if (mediaUrls.length === 0) { setError("Please upload your media file(s)."); return; }
         if (!scheduledDate || !scheduledTime) { setError("Please set a scheduled date and time."); return; }
 
         const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
@@ -287,11 +285,14 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                 body: JSON.stringify({
                     caption: caption.trim(),
                     mediaType,
-                    storageUrl: mediaUrl,
+                    mediaUrls,
                     scheduledAt,
                 }),
             });
-            if (!res.ok) throw new Error("Failed to save post");
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({ error: "Unknown server error" }));
+                throw new Error(errData.error || "Failed to schedule post");
+            }
             setSubmitStatus("done");
             setTimeout(() => router.push("/instagram-dashboard"), 1500);
         } catch (err: unknown) {
@@ -319,11 +320,10 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
             <form onSubmit={handleSubmit} className="flex flex-col gap-10 md:gap-14">
 
                 <FormCard title="1. Select Post Type">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {([
-                            { value: "PHOTO", label: "Photo", desc: "Standard image post" },
-                            { value: "VIDEO", label: "Video", desc: "Standard feed video" },
-                            { value: "REEL", label: "Reel", desc: "Vertical short video" },
+                            { value: "PHOTO", label: "📷 Photo", desc: "Single image or Carousel (up to 10)" },
+                            { value: "REEL", label: "🎬 Reel", desc: "Vertical short video" },
                         ] as const).map(({ value, label, desc }) => (
                             <button
                                 key={value}
@@ -347,46 +347,53 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
 
                 <FormCard title="2. Upload Media">
                     <div className="flex flex-col gap-4">
-                        <SectionLabel text="Media File" required />
-                        {mediaUrl ? (
-                            <UploadedMediaCard
-                                kind={mediaType === "PHOTO" ? "image" : "video"}
-                                url={mediaUrl}
-                                fileName={mediaFileName}
-                                fileSize={mediaFileSize}
-                                progress={mediaProgress}
-                                previewFrame={videoPreviewFrame}
-                                videoRef={videoRef}
-                                onVideoLoaded={captureVideoFrame}
-                                onRemove={() => {
-                                    setMediaUrl(""); setMediaProgress(0);
-                                    setMediaFileSize(0); setMediaFileName("");
-                                    setVideoPreviewFrame("");
-                                    setIsUploading(false);
-                                }}
-                            />
+                        <SectionLabel text="Media File(s)" required hint={mediaType === "PHOTO" ? "Select up to 10 photos for a Carousel!" : undefined} />
+                        {mediaUrls.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {mediaUrls.map((url, i) => (
+                                    <UploadedMediaCard
+                                        key={url}
+                                        kind={mediaType === "PHOTO" ? "image" : "video"}
+                                        url={url}
+                                        fileName={mediaFiles[i]?.name || "upload"}
+                                        fileSize={mediaFiles[i]?.size || 0}
+                                        progress={mediaProgress}
+                                        previewFrame={i === 0 ? videoPreviewFrame : undefined}
+                                        videoRef={i === 0 ? videoRef : undefined}
+                                        onVideoLoaded={i === 0 ? captureVideoFrame : undefined}
+                                        onRemove={() => {
+                                            const newUrls = [...mediaUrls];
+                                            const newFiles = [...mediaFiles];
+                                            newUrls.splice(i, 1);
+                                            newFiles.splice(i, 1);
+                                            setMediaUrls(newUrls);
+                                            setMediaFiles(newFiles);
+                                            if (newUrls.length === 0) {
+                                                setMediaProgress(0);
+                                                setVideoPreviewFrame("");
+                                                setIsUploading(false);
+                                            }
+                                        }}
+                                    />
+                                ))}
+                            </div>
                         ) : (
                             <UploadZone
                                 endpoint={mediaType === "PHOTO" ? "thumbnailUploader" : "videoUploader"}
-                                label={`Upload ${mediaType.toLowerCase()} file`}
-                                hint={mediaType === "PHOTO" ? "JPG, PNG — max 8MB" : "MP4, MOV — max 2GB"}
+                                label={`Upload ${mediaType.toLowerCase()} file${mediaType === "PHOTO" ? "(s)" : ""}`}
+                                hint={mediaType === "PHOTO" ? "JPG, PNG — select multiple for Carousel (max 10)" : "MP4, MOV"}
                                 progress={mediaProgress}
                                 uploading={mediaUploading}
-                                fileSize={mediaFileSize}
                                 onBeforeUpload={(files) => {
-                                    const f = files[0];
-                                    if (f) {
-                                        setMediaFileSize(f.size);
-                                        setMediaFileName(f.name);
-                                        setMediaUploading(true);
-                                        setMediaProgress(0);
-                                        setIsUploading(true);
-                                    }
+                                    setMediaFiles(files.map(f => ({ name: f.name, size: f.size })));
+                                    setMediaUploading(true);
+                                    setMediaProgress(0);
+                                    setIsUploading(true);
                                     return files;
                                 }}
                                 onProgress={(p) => setMediaProgress(p)}
-                                onComplete={(url) => {
-                                    setMediaUrl(url);
+                                onComplete={(urls) => {
+                                    setMediaUrls(urls);
                                     setMediaUploading(false);
                                     setIsUploading(false);
                                 }}

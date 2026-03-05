@@ -128,7 +128,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                                 href="/api/instagram/connect"
                                 className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors inline-flex justify-center py-2"
                             >
-                                Reconnect / Switch Account
+                                Switch Account
                             </Link>
                         </div>
                     ) : (
