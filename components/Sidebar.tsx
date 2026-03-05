@@ -4,13 +4,58 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { useUpload } from "@/contexts/UploadContext";
+import { useConfirm } from "@/components/ConfirmDialog";
+import type { ReactNode } from "react";
 
-type NavItem = { href: string; label: string; icon: string; disabled?: boolean };
+/* ─── Brand SVG Icons ─────────────────────────────── */
+
+function YouTubeLogo({ size = 20 }: { size?: number }) {
+    const h = Math.round(size * 0.7);
+    return (
+        <svg width={size} height={h} viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="28" height="20" rx="5" fill="#FF0000" />
+            <path d="M11.5 6v8l7-4-7-4z" fill="white" />
+        </svg>
+    );
+}
+
+function InstagramLogo({ size = 20 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="ig-sidebar" cx="30%" cy="107%" r="150%">
+                    <stop offset="0%" stopColor="#fdf497" />
+                    <stop offset="5%" stopColor="#fdf497" />
+                    <stop offset="45%" stopColor="#fd5949" />
+                    <stop offset="60%" stopColor="#d6249f" />
+                    <stop offset="90%" stopColor="#285AEB" />
+                </radialGradient>
+            </defs>
+            <rect width="24" height="24" rx="6" fill="url(#ig-sidebar)" />
+            <rect x="6.5" y="6.5" width="11" height="11" rx="3" stroke="white" strokeWidth="1.5" fill="none" />
+            <circle cx="12" cy="12" r="2.8" stroke="white" strokeWidth="1.5" fill="none" />
+            <circle cx="16.2" cy="7.8" r="0.8" fill="white" />
+        </svg>
+    );
+}
+
+function LinkIcon({ size = 20 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+        </svg>
+    );
+}
+
+/* ─── Nav data ────────────────────────────────────── */
+
+type NavItem = { href: string; label: string; icon: ReactNode; disabled?: boolean };
 
 const navMain: NavItem[] = [
-    { href: "/youtube-dashboard", label: "YouTube Hub", icon: "🎬" },
-    { href: "/instagram-dashboard", label: "Instagram Hub", icon: "📸" },
-    { href: "/connect", label: "Connections", icon: "🔗" },
+    { href: "/youtube-dashboard", label: "YouTube Hub", icon: <YouTubeLogo /> },
+    { href: "/instagram-dashboard", label: "Instagram Hub", icon: <InstagramLogo /> },
+    { href: "/connect", label: "Connections", icon: <LinkIcon size={18} /> },
 ];
 
 const navUpload: NavItem[] = [
@@ -18,24 +63,58 @@ const navUpload: NavItem[] = [
     { href: "/instagram-dashboard/upload", label: "Instagram Upload", icon: "⬆️" },
 ];
 
-interface SidebarProps {
-    onClose?: () => void;
-}
+/* ─── Component ───────────────────────────────────── */
+
+interface SidebarProps { onClose?: () => void; }
 
 export default function Sidebar({ onClose }: SidebarProps) {
     const path = usePathname();
     const router = useRouter();
     const { isUploading } = useUpload();
+    const confirm = useConfirm();
 
-    const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-        if (!isUploading) return; // no guard needed
+    const handleNavClick = async (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+        if (!isUploading) {
+            onClose?.();
+            return;
+        }
         e.preventDefault();
-        const confirmed = window.confirm(
-            "⚠️ An upload is in progress!\n\nLeaving this page will cancel your upload. Are you sure you want to leave?"
-        );
+        const confirmed = await confirm({
+            title: "Upload in Progress",
+            message: "Leaving this page will cancel your current upload. Are you sure you want to leave?",
+            confirmLabel: "Yes, leave page",
+            cancelLabel: "Stay here",
+            variant: "warning"
+        });
         if (confirmed) {
             router.push(href);
+            onClose?.();
         }
+    };
+
+    const renderLink = (item: NavItem) => {
+        const active = path === item.href;
+        return (
+            <Link
+                key={item.href}
+                href={item.href}
+                onClick={(e) => handleNavClick(e, item.href)}
+                className={[
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium no-underline",
+                    "border-l-[3px]",
+                    active
+                        ? "bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-500"
+                        : "text-[var(--muted)] border-transparent hover:bg-[var(--surface-2)] hover:text-[var(--text)]",
+                    isUploading && !active ? "opacity-60" : "",
+                ].join(" ")}
+            >
+                <span className="shrink-0 leading-none flex items-center">{item.icon}</span>
+                <span>{item.label}</span>
+                {isUploading && !active && (
+                    <span className="ml-auto text-[10px] text-amber-600 dark:text-amber-400 font-semibold">⚠</span>
+                )}
+            </Link>
+        );
     };
 
     return (
@@ -48,11 +127,10 @@ export default function Sidebar({ onClose }: SidebarProps) {
                     </div>
                     <span className="font-extrabold text-sm gradient-text">Manage Me</span>
                 </div>
-                {/* Close button – mobile only */}
                 {onClose && (
                     <button
                         onClick={onClose}
-                        className="lg:hidden p-1 rounded-md text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors"
+                        className="lg:hidden p-1 rounded-md text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
                     >
                         <X size={18} />
                     </button>
@@ -64,99 +142,47 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 <div className="mx-3 mt-3 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
                     <div className="flex items-center gap-1.5">
                         <span className="text-sm animate-pulse">⬆️</span>
-                        <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
-                            Upload in progress…
-                        </p>
+                        <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">Upload in progress…</p>
                     </div>
-                    <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">
-                        Don't navigate away
-                    </p>
+                    <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-0.5">Don't navigate away</p>
                 </div>
             )}
 
             {/* Nav Main */}
             <nav className="px-3 py-4 flex flex-col gap-0.5">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] px-2 mb-2">
-                    Menu
-                </p>
-                {navMain.map(({ href, label, icon }) => {
-                    const active = path === href;
-                    return (
-                        <Link
-                            key={href}
-                            href={href}
-                            onClick={(e) => handleNavClick(e, href)}
-                            className={[
-                                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium no-underline",
-                                "transition-all duration-150 border-l-[3px]",
-                                active
-                                    ? "bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-500"
-                                    : "text-[var(--muted)] border-transparent hover:bg-[var(--surface-2)] hover:text-[var(--text)]",
-                                isUploading && !active ? "opacity-60" : "",
-                            ].join(" ")}
-                        >
-                            <span className="text-base leading-none">{icon}</span>
-                            <span>{label}</span>
-                            {isUploading && !active && (
-                                <span className="ml-auto text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
-                                    ⚠
-                                </span>
-                            )}
-                        </Link>
-                    );
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] px-2 mb-2">Menu</p>
+                {navMain.map((item) => {
+                    if (item.disabled) {
+                        return (
+                            <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium border-l-[3px] border-transparent text-[var(--muted)] opacity-50 cursor-not-allowed">
+                                <span className="shrink-0 leading-none flex items-center">{item.icon}</span>
+                                <span>{item.label}</span>
+                            </div>
+                        );
+                    }
+                    return renderLink(item);
                 })}
             </nav>
 
             {/* Nav Uploads */}
             <nav className="flex-1 px-3 py-0 flex flex-col gap-0.5">
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] px-2 mb-2 mt-2">
-                    Schedule
-                </p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)] px-2 mb-2 mt-2">Schedule</p>
                 {navUpload.map((item) => {
-                    const active = path === item.href;
                     if (item.disabled) {
                         return (
-                            <div
-                                key={item.label}
-                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium border-l-[3px] border-transparent text-[var(--muted)] opacity-50 cursor-not-allowed"
-                            >
-                                <span className="text-base leading-none">{item.icon}</span>
+                            <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium border-l-[3px] border-transparent text-[var(--muted)] opacity-50 cursor-not-allowed">
+                                <span className="shrink-0 leading-none flex items-center">{item.icon}</span>
                                 <span>{item.label}</span>
                             </div>
-                        )
+                        );
                     }
-
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={(e) => handleNavClick(e, item.href)}
-                            className={[
-                                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium no-underline",
-                                "transition-all duration-150 border-l-[3px]",
-                                active
-                                    ? "bg-blue-50 text-blue-700 border-blue-600 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-500"
-                                    : "text-[var(--muted)] border-transparent hover:bg-[var(--surface-2)] hover:text-[var(--text)]",
-                                isUploading && !active ? "opacity-60" : "",
-                            ].join(" ")}
-                        >
-                            <span className="text-base leading-none">{item.icon}</span>
-                            <span>{item.label}</span>
-                            {isUploading && !active && (
-                                <span className="ml-auto text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
-                                    ⚠
-                                </span>
-                            )}
-                        </Link>
-                    );
+                    return renderLink(item);
                 })}
             </nav>
 
             {/* Footer */}
             <div className="px-5 py-4 border-t border-[var(--border-solid)]">
-                <p className="text-[10px] text-[var(--muted)] leading-relaxed">
-                    Manage Me · YouTube Scheduler
-                </p>
+                <p className="text-[10px] text-[var(--muted)] leading-relaxed">Manage Me · Social Scheduler</p>
             </div>
         </aside>
     );

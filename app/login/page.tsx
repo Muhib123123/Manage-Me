@@ -23,7 +23,7 @@ export default function LoginPage() {
             </div>
 
             {/* Premium Card */}
-            <div className="animate-fade-up w-full max-w-[400px] bg-[var(--surface)] border border-[var(--border)] rounded-2xl px-10 py-12 relative z-[1] shadow-sm">
+            <div className="w-full max-w-[400px] bg-[var(--surface)] border border-[var(--border)] rounded-2xl px-10 py-12 relative z-[1] shadow-sm">
 
                 {/* Logo mark */}
                 <div className="text-center mb-10">

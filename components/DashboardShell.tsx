@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
@@ -11,24 +11,39 @@ interface Props {
 
 export default function DashboardShell({ user, children }: Props) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isLg, setIsLg] = useState(false);
+
+    useEffect(() => {
+        const mq = window.matchMedia("(min-width: 1024px)");
+        setIsLg(mq.matches);
+        const handler = (e: MediaQueryListEvent) => setIsLg(e.matches);
+        mq.addEventListener("change", handler);
+        return () => mq.removeEventListener("change", handler);
+    }, []);
 
     return (
-        <div className="flex min-h-screen bg-[var(--bg)]">
+        <div className="flex h-screen bg-[var(--bg)]">
+
             {/* Mobile overlay */}
-            {sidebarOpen && (
+            {!isLg && (
                 <div
-                    className="fixed inset-0 z-40 bg-black/30 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
+                    className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+                    style={{
+                        opacity: sidebarOpen ? 1 : 0,
+                        pointerEvents: sidebarOpen ? "auto" : "none",
+                        transition: "opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+                    }}
                 />
             )}
 
-            {/* Sidebar — fixed drawer on mobile, static on lg */}
+            {/* Sidebar */}
             <div
-                className={[
-                    "fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out",
-                    "lg:static lg:translate-x-0 lg:z-auto lg:block",
-                    sidebarOpen ? "translate-x-0" : "-translate-x-full",
-                ].join(" ")}
+                className={isLg ? "relative z-auto shrink-0" : "fixed inset-y-0 left-0 z-50"}
+                style={isLg ? {} : {
+                    transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+                    transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
             >
                 <Sidebar onClose={() => setSidebarOpen(false)} />
             </div>
@@ -40,6 +55,7 @@ export default function DashboardShell({ user, children }: Props) {
                     {children}
                 </main>
             </div>
+
         </div>
     );
 }

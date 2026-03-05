@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UnifiedPost } from "@/types";
+import { useConfirm } from "@/components/ConfirmDialog";
 
 const STATUS_META: Record<string, { label: string; color: string; border: string; bg: string }> = {
     PENDING: { label: "Pending", color: "#b45309", border: "#fde68a", bg: "#fffbeb" },
@@ -20,6 +21,7 @@ const STATUS_LEFT: Record<string, string> = {
 
 export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: boolean }) {
     const router = useRouter();
+    const confirm = useConfirm();
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState("");
     const [videoError, setVideoError] = useState(false);
@@ -28,7 +30,16 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
     const leftBorder = STATUS_LEFT[post.status] ?? "border-l-slate-300";
 
     const handleUploadNow = async () => {
-        if (!confirm(`Upload "${post.title}" to ${post.platform === "YOUTUBE" ? "YouTube" : "Instagram"} now?`)) return;
+        const platformName = post.platform === "YOUTUBE" ? "YouTube" : "Instagram";
+        const confirmed = await confirm({
+            title: "Upload Now?",
+            message: `Are you sure you want to trigger an immediate upload to ${platformName} for "${post.title}"?`,
+            confirmLabel: `Yes, upload to ${platformName}`,
+            cancelLabel: "Cancel",
+            variant: "info",
+        });
+        if (!confirmed) return;
+
         setUploading(true);
         setUploadError("");
         try {
@@ -49,7 +60,15 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
     };
 
     const handleDelete = async () => {
-        if (!confirm(`Cancel and delete "${post.title}"?`)) return;
+        const confirmed = await confirm({
+            title: "Delete Post?",
+            message: `Are you sure you want to cancel and delete "${post.title}"? This action cannot be undone.`,
+            confirmLabel: "Yes, delete",
+            cancelLabel: "Cancel",
+            variant: "danger",
+        });
+        if (!confirmed) return;
+
         const apiRoute = post.platform === "YOUTUBE" ? "/api/videos" : "/api/instagram/posts";
         await fetch(`${apiRoute}?id=${post.id}`, { method: "DELETE" });
         router.refresh();
@@ -64,7 +83,7 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
             className={[
                 "flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-[var(--surface)] rounded-xl border border-[var(--border-solid)]",
                 "border-l-[3px]", leftBorder,
-                "shadow-[var(--shadow-sm)] transition-shadow hover:shadow-[var(--shadow-md)]",
+                "shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)]",
             ].join(" ")}
         >
             <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -145,7 +164,7 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
                             href={liveUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`px-3 py-1.5 rounded-lg text-white text-[11px] sm:text-xs font-semibold no-underline transition-colors ${post.platform === "YOUTUBE" ? "bg-red-600 hover:bg-red-700" : "bg-fuchsia-600 hover:bg-fuchsia-700"
+                            className={`px-3 py-1.5 rounded-lg text-white text-[11px] sm:text-xs font-semibold no-underline ${post.platform === "YOUTUBE" ? "bg-red-600 hover:bg-red-700" : "bg-fuchsia-600 hover:bg-fuchsia-700"
                                 }`}
                         >
                             ▶ View
@@ -154,15 +173,15 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
                     {(post.status === "PENDING" || post.status === "FAILED") && !uploading && (
                         <button
                             onClick={handleUploadNow}
-                            className="px-3 py-1.5 rounded-lg bg-[var(--text)] text-[var(--surface)] text-[11px] sm:text-xs font-semibold hover:opacity-90 transition-opacity"
+                            className="px-3 py-1.5 rounded-lg bg-[var(--text)] text-[var(--surface)] text-[11px] sm:text-xs font-semibold hover:opacity-90 cursor-pointer"
                         >
-                            ⬆ Now
+                            {post.status === "FAILED" ? "Upload again" : "Upload now"}
                         </button>
                     )}
                     {post.status !== "DONE" && post.status !== "UPLOADING" && (
                         <button
                             onClick={handleDelete}
-                            className="px-3 py-1.5 rounded-lg border border-[var(--border-solid)] bg-transparent text-[var(--muted)] text-[11px] sm:text-xs font-medium cursor-pointer transition-all hover:text-red-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20"
+                            className="px-3 py-1.5 rounded-lg border border-[var(--border-solid)] bg-transparent text-[var(--muted)] text-[11px] sm:text-xs font-medium cursor-pointer hover:text-red-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20"
                         >
                             ✕
                         </button>

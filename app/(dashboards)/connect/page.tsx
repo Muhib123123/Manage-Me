@@ -22,7 +22,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
     return (
         <div className="p-6 md:p-10 max-w-4xl mx-auto">
             <div className="mb-12 md:mb-16">
-                <h1 className="text-3xl md:text-5xl font-['Playfair_Display'] font-medium tracking-tight mb-4">
+                <h1 className="text-3xl md:text-5xl font-medium text-[var(--text)] tracking-tight mb-4">
                     Platform Connections
                 </h1>
                 <p className="text-[var(--muted)] text-sm md:text-base max-w-2xl leading-relaxed">

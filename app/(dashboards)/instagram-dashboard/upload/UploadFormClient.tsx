@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { UploadDropzone } from "@/lib/uploadthing";
+import { UploadButton } from "@/lib/uploadthing";
 import { useUpload } from "@/contexts/UploadContext";
+import { DatePicker, TimePicker } from "@/components/DateTimePicker";
 
 type UploadStatus = "idle" | "saving" | "done" | "error";
 
@@ -82,7 +83,7 @@ function UploadedMediaCard({
                 <button
                     type="button"
                     onClick={onRemove}
-                    className="absolute top-3 right-3 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 backdrop-blur-md w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200 opacity-0 group-hover:opacity-100"
+                    className="absolute top-3 right-3 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 backdrop-blur-md w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer opacity-100 md:opacity-0 md:group-hover:opacity-100 border border-white/10 shadow-sm"
                     aria-label="Remove uploaded file"
                 >
                     ✕
@@ -117,39 +118,7 @@ function UploadZone({
     onComplete: (urls: string[]) => void;
     onError: (msg: string) => void;
 }) {
-    const wrapperRef = useRef<HTMLDivElement>(null);
 
-    const getBtn = () =>
-        wrapperRef.current?.querySelector("button") as HTMLElement | null;
-
-    const showBtn = () => { const b = getBtn(); if (b) b.style.display = "block"; };
-    const hideBtn = () => { const b = getBtn(); if (b) b.style.display = "none"; };
-
-    useEffect(() => {
-        const wrapper = wrapperRef.current;
-        if (!wrapper) return;
-
-        const timer = setTimeout(() => {
-            hideBtn();
-            const input = wrapper.querySelector('input[type="file"]') as HTMLInputElement | null;
-            if (!input) return;
-
-            const handleChange = () => {
-                if (input.files && input.files.length > 0) showBtn();
-                else hideBtn();
-            };
-
-            input.addEventListener("change", handleChange);
-            (wrapper as HTMLDivElement & { _cleanup?: () => void })._cleanup = () =>
-                input.removeEventListener("change", handleChange);
-        }, 100);
-
-        return () => {
-            clearTimeout(timer);
-            const cleanup = (wrapper as HTMLDivElement & { _cleanup?: () => void })._cleanup;
-            if (cleanup) cleanup();
-        };
-    }, []);
 
     return (
         <div className="flex flex-col">
@@ -170,47 +139,46 @@ function UploadZone({
             )}
 
             {!uploading && (
-                <div ref={wrapperRef} className="w-full max-w-[400px] [&>div]:!border-[var(--border-solid)] [&>div]:!bg-[var(--surface-2)] hover:[&>div]:!border-[var(--text)] transition-colors duration-300">
-                    <UploadDropzone
-                        endpoint={endpoint}
-                        appearance={{
-                            container: {
-                                border: '1px dashed var(--border-solid)',
-                                borderRadius: '12px',
-                                background: 'transparent',
-                                padding: '40px 20px',
-                                transition: 'all 0.2s',
-                            },
-                            button: {
-                                background: "var(--text)",
-                                color: "var(--surface)",
-                                borderRadius: "8px",
-                                fontWeight: "500",
-                                fontSize: "14px",
-                                padding: "8px 24px"
-                            },
-                            label: { color: "var(--text)", fontWeight: "500", marginBottom: "4px" },
-                            allowedContent: { color: "var(--muted)", fontSize: "12px", marginTop: "8px" },
-                            uploadIcon: { color: "var(--muted)", width: "32px", height: "32px", marginBottom: "16px" }
-                        }}
-                        onBeforeUploadBegin={(files) => {
-                            onBeforeUpload(files);
-                            return files;
-                        }}
-                        onUploadProgress={(p) => onProgress(Math.round(p))}
-                        onClientUploadComplete={(res) => {
-                            if (res && res.length > 0) {
-                                onComplete(res.map(r => r.ufsUrl));
-                            }
-                            onProgress(100);
-                            hideBtn();
-                        }}
-                        content={{ label, allowedContent: hint }}
-                        onUploadError={(err) => {
-                            onError(err.message);
-                            hideBtn();
-                        }}
-                    />
+                <div className="w-full max-w-[400px] border border-dashed border-[var(--border-solid)] hover:border-[var(--text)] rounded-xl bg-[var(--surface-2)] transition-colors duration-300 p-10 flex flex-col items-center gap-3">
+                    <svg className="w-8 h-8 text-[var(--muted)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <p className="text-sm font-medium text-[var(--text)]">{label}</p>
+                    <p className="text-xs text-[var(--muted)] text-center">{hint}</p>
+                    {/* Wrapper hides UploadThing's internal "no file chosen" / allowed-content text */}
+                    <div className="[&_[data-ut-element='allowed-content']]:!hidden [&_.ut-allowed-content]:!hidden [&_input[type='file']]:!hidden">
+                        <UploadButton
+                            endpoint={endpoint}
+                            appearance={{
+                                button: {
+                                    background: "var(--text)",
+                                    color: "var(--surface)",
+                                    borderRadius: "8px",
+                                    fontWeight: "500",
+                                    fontSize: "14px",
+                                    padding: "8px 24px",
+                                    cursor: "pointer",
+                                    marginTop: "4px",
+                                },
+                                allowedContent: { display: "none" },
+                            }}
+                            onBeforeUploadBegin={(files) => {
+                                onBeforeUpload(files);
+                                return files;
+                            }}
+                            onUploadProgress={(p) => onProgress(Math.round(p))}
+                            onClientUploadComplete={(res) => {
+                                if (res && res.length > 0) {
+                                    onComplete(res.map(r => r.ufsUrl));
+                                }
+                                onProgress(100);
+                            }}
+                            onUploadError={(err) => {
+                                onError(err.message);
+                            }}
+                            content={{ allowedContent: "" }}
+                        />
+                    </div>
                 </div>
             )}
         </div>
@@ -306,10 +274,10 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
             <canvas ref={canvasRef} className="hidden" />
 
             <div className="mb-12 md:mb-16">
-                <h1 className="text-3xl md:text-5xl font-['Playfair_Display'] font-medium text-[var(--foreground)] tracking-tight mb-4 hidden md:block">
+                <h1 className="text-3xl md:text-5xl font-medium text-[var(--text)] tracking-tight mb-4 hidden md:block">
                     Schedule an Instagram Post
                 </h1>
-                <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)] mb-2 md:hidden">
+                <h1 className="text-3xl font-bold tracking-tight text-[var(--text)] mb-2 md:hidden">
                     Schedule IG Post
                 </h1>
                 <p className="text-[var(--muted)] text-sm md:text-base max-w-2xl leading-relaxed">
@@ -319,7 +287,7 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-10 md:gap-14">
 
-                <FormCard title="1. Select Post Type">
+                <FormCard title="Select Post Type">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {([
                             { value: "PHOTO", label: "📷 Photo", desc: "Single image or Carousel (up to 10)" },
@@ -345,10 +313,10 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                     </div>
                 </FormCard>
 
-                <FormCard title="2. Upload Media">
+                <FormCard title="Upload Media">
                     <div className="flex flex-col gap-4">
-                        <SectionLabel text="Media File(s)" required hint={mediaType === "PHOTO" ? "Select up to 10 photos for a Carousel!" : undefined} />
-                        {mediaUrls.length > 0 ? (
+                        <SectionLabel text="Media File(s)" required hint={mediaType === "PHOTO" ? `Select up to 10 photos for a Carousel! (${mediaUrls.length}/10 uploaded)` : undefined} />
+                        {mediaUrls.length > 0 && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {mediaUrls.map((url, i) => (
                                     <UploadedMediaCard
@@ -377,15 +345,21 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                                     />
                                 ))}
                             </div>
-                        ) : (
+                        )}
+                        {/* Show upload zone: always for REEL when empty, always for PHOTO when under 10 imgs */}
+                        {(mediaType === "REEL" ? mediaUrls.length === 0 : mediaUrls.length < 10) && (
                             <UploadZone
                                 endpoint={mediaType === "PHOTO" ? "thumbnailUploader" : "videoUploader"}
                                 label={`Upload ${mediaType.toLowerCase()} file${mediaType === "PHOTO" ? "(s)" : ""}`}
-                                hint={mediaType === "PHOTO" ? "JPG, PNG — select multiple for Carousel (max 10)" : "MP4, MOV"}
+                                hint={mediaType === "PHOTO" ? "JPG, PNG — one at a time, keep adding up to 10" : "MP4, MOV"}
                                 progress={mediaProgress}
                                 uploading={mediaUploading}
                                 onBeforeUpload={(files) => {
-                                    setMediaFiles(files.map(f => ({ name: f.name, size: f.size })));
+                                    if (mediaType === "PHOTO") {
+                                        setMediaFiles(prev => [...prev, ...files.map(f => ({ name: f.name, size: f.size }))]);
+                                    } else {
+                                        setMediaFiles(files.map(f => ({ name: f.name, size: f.size })));
+                                    }
                                     setMediaUploading(true);
                                     setMediaProgress(0);
                                     setIsUploading(true);
@@ -393,7 +367,11 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                                 }}
                                 onProgress={(p) => setMediaProgress(p)}
                                 onComplete={(urls) => {
-                                    setMediaUrls(urls);
+                                    if (mediaType === "PHOTO") {
+                                        setMediaUrls(prev => [...prev, ...urls].slice(0, 10));
+                                    } else {
+                                        setMediaUrls(urls);
+                                    }
                                     setMediaUploading(false);
                                     setIsUploading(false);
                                 }}
@@ -407,7 +385,7 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                     </div>
                 </FormCard>
 
-                <FormCard title="3. Caption & Metadata">
+                <FormCard title="Caption & Metadata">
                     <div className="flex flex-col gap-2.5">
                         <div className="flex items-center justify-between">
                             <SectionLabel text="Caption" optional />
@@ -426,30 +404,26 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                     </div>
                 </FormCard>
 
-                <FormCard title="4. Scheduling">
-                    <div className="flex flex-col gap-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                            <div className="flex flex-col gap-2.5">
+                <FormCard title="Scheduling">
+                    <div className="flex flex-col gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="flex flex-col gap-1.5">
                                 <SectionLabel text="Publication Date" required />
-                                <input
-                                    type="date"
+                                <DatePicker
                                     value={scheduledDate}
-                                    onChange={(e) => setScheduledDate(e.target.value)}
+                                    onChange={setScheduledDate}
                                     min={new Date().toISOString().split("T")[0]}
-                                    className={`${inputCls} cursor-pointer`}
                                 />
                             </div>
-                            <div className="flex flex-col gap-2.5">
+                            <div className="flex flex-col gap-1.5">
                                 <SectionLabel text="Time" required />
-                                <input
-                                    type="time"
+                                <TimePicker
                                     value={scheduledTime}
-                                    onChange={(e) => setScheduledTime(e.target.value)}
-                                    className={`${inputCls} cursor-pointer`}
+                                    onChange={setScheduledTime}
                                 />
                             </div>
                         </div>
-                        <p className="text-xs text-[var(--muted)] flex items-center gap-1.5 mt-2">
+                        <p className="text-xs text-[var(--muted)] flex items-center gap-1.5">
                             <span>🕒</span> Scheduled relative to your local browser timezone.
                         </p>
                     </div>
@@ -472,7 +446,7 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                     <button
                         type="submit"
                         disabled={submitStatus === "saving" || mediaUploading}
-                        className="px-8 py-4 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-base rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] dark:shadow-none min-w-[200px]"
+                        className="px-8 py-4 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-base rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] dark:shadow-none min-w-[200px] cursor-pointer"
                     >
                         {submitStatus === "saving"
                             ? "Scheduling..."
@@ -503,7 +477,7 @@ function SectionLabel({ text, required, optional, hint }: {
     text: string; required?: boolean; optional?: boolean; hint?: string;
 }) {
     return (
-        <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--text)]">
+        <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--text)] transition-colors duration-300">
             {text}
             {required && <span className="text-red-500" aria-label="required">*</span>}
             {optional && <span className="font-normal tracking-wide text-[var(--muted)] text-xs uppercase ml-2">(optional)</span>}

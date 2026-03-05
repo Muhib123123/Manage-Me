@@ -48,8 +48,8 @@ export default async function DashboardPage() {
                         Manage your scheduled and published YouTube content.
                     </p>
                 </div>
-                <Link href="/youtube-dashboard/upload" className="dark:bg-blue-950 bg-blue-500 text-white px-4 py-3 rounded-lg">
-                    + Schedule New Video
+                <Link href="/youtube-dashboard/upload" className="w-full sm:w-auto px-5 py-2.5 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-sm rounded-xl transition-all shadow-sm dark:shadow-none text-center flex items-center justify-center cursor-pointer">
+                    Schedule New Video +
                 </Link>
             </div>
 
@@ -66,8 +66,8 @@ export default async function DashboardPage() {
                     <EmptyState
                         icon="📅"
                         message="No scheduled uploads yet"
-                        cta="Schedule your first post →"
-                        href="/upload"
+                        cta="Schedule your video →"
+                        href="/youtube-dashboard/upload"
                     />
                 ) : (
                     <div className="flex flex-col gap-3">
@@ -138,9 +138,6 @@ function Section({
         <div className="mb-8">
             <div className="flex items-center gap-2.5 mb-3">
                 <h2 className="text-sm font-semibold text-[var(--text)]">{title}</h2>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${SECTION_BADGE[statusColor]}`}>
-                    {count}
-                </span>
             </div>
             {children}
         </div>

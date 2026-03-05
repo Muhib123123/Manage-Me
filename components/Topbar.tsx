@@ -17,7 +17,7 @@ export default function Topbar({ user, onMenuClick }: TopbarProps) {
                 {/* Hamburger — mobile only */}
                 <button
                     onClick={onMenuClick}
-                    className="lg:hidden p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors"
+                    className="lg:hidden p-2 rounded-lg text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
                     aria-label="Open menu"
                 >
                     <Menu size={20} />
@@ -57,7 +57,7 @@ export default function Topbar({ user, onMenuClick }: TopbarProps) {
 
                 <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="px-3 py-1.5 rounded-lg border border-[var(--border-solid)] bg-transparent text-[var(--muted)] text-xs font-medium cursor-pointer transition-all duration-150 hover:text-[var(--text)] hover:border-[var(--primary)] hover:bg-[var(--surface-2)]"
+                    className="px-3 py-1.5 rounded-lg border border-[var(--border-solid)] bg-transparent text-[var(--muted)] text-xs font-medium cursor-pointer hover:text-[var(--text)] hover:border-[var(--primary)] hover:bg-[var(--surface-2)]"
                 >
                     <span className="hidden sm:inline">Sign out</span>
                     <span className="sm:hidden">↩</span>
