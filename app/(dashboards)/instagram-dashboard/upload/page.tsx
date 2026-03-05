@@ -27,7 +27,7 @@ export default async function InstagramUploadPage() {
                     </p>
                     <Link
                         href="/dashboard/connect"
-                        className="mt-4 px-6 py-3 bg-[var(--text)] hover:bg-[var(--text-secondary)] text-[var(--surface)] font-semibold rounded-xl transition-colors"
+                        className="mt-4 px-6 py-3 bg-[var(--text)] hover:bg-zinc-800 dark:hover:bg-neutral-400 text-[var(--surface)] font-semibold rounded-xl transition-colors"
                     >
                         Go to Connections
                     </Link>

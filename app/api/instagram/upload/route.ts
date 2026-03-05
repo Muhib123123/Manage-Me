@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { instagramQueue } from "@/lib/queue";
+import { instagramQueue } from "@/lib/queue-instagram";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {

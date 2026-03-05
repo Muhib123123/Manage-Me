@@ -20,10 +20,9 @@ const connection = new IORedis(redisUrl || "redis://localhost:6379", {
 });
 
 export const videoQueue = new Queue("youtube-uploads", { connection });
-export const instagramQueue = new Queue("instagram-uploads", { connection });
 
 // Prevent multiple workers in development HMR
-const globalForWorker = global as unknown as { videoWorker?: Worker; instagramWorker?: Worker };
+const globalForWorker = global as unknown as { videoWorker?: Worker };
 
 if (!globalForWorker.videoWorker && redisUrl) {
     globalForWorker.videoWorker = new Worker(
