@@ -1,6 +1,6 @@
 export type UnifiedPost = {
     id: string;
-    platform: "YOUTUBE" | "INSTAGRAM";
+    platform: "YOUTUBE" | "INSTAGRAM" | "TIKTOK";
     title: string;
     mediaType: string;
     status: string;

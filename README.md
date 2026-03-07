@@ -1,6 +1,6 @@
 # 🎬 Manage-Me — Multi-Platform Social Media Scheduler
 
-A centralized hub that allows content creators to sign up, connect their **YouTube** and **Instagram** accounts, and schedule automatic video and photo uploads to each platform independently.
+A centralized hub that allows content creators to sign up, connect their **YouTube**, **Instagram**, and **TikTok** accounts, and schedule automatic video and photo uploads to each platform independently.
 
 ---
 
@@ -14,7 +14,7 @@ A centralized hub that allows content creators to sign up, connect their **YouTu
 | Database         | PostgreSQL + Prisma ORM                 |
 | File Storage     | UploadThing                             |
 | Job Queue        | BullMQ + Redis (Upstash Redis)          |
-| APIs             | Google API (v3), Instagram Graph API    |
+| APIs             | Google API (v3), Instagram Graph API, TikTok Content Posting API |
 | Hosting          | Vercel (app) + Railway (Redis/Postgres) |
 
 ---
@@ -22,7 +22,7 @@ A centralized hub that allows content creators to sign up, connect their **YouTu
 ## ✨ Core Features
 
 - **Hub-Based Authentication** — Users sign up via Google with **basic profile access only** (no heavy permissions required to create an account).
-- **Independent Platform Connections** — Users manually connect their YouTube Channels and Instagram Creator/Business accounts from a central Connections Dashboard.
+- **Independent Platform Connections** — Users manually connect their YouTube Channels, Instagram Creator/Business accounts, and TikTok accounts from a central Connections Dashboard.
 - **Unified Scheduling Engine** — A robust BullMQ + Redis backend that routes scheduled posts to the correct platform API at the exact second.
 - **Dedicated YouTube Studio** — 
   - Upload Normal Videos or YouTube Shorts
@@ -30,22 +30,26 @@ A centralized hub that allows content creators to sign up, connect their **YouTu
 - **Dedicated Instagram Studio** —
   - Upload Photos, Videos, or Reels
   - Enforcement of Instagram strict rules (aspect ratios, max file sizes, media containers).
+- **Dedicated TikTok Studio** —
+  - Upload Videos directly to TikTok
+  - Control over privacy settings, captions, duet, stitch, and comment permissions.
 
 ---
 
 ## 🗺️ Project Phases Overview
 
 ```
-Phase 1 → Foundation & Basic Auth (Google Login - No YouTube Scopes)
-Phase 2 → Database Architecture (Multi-platform models)
-Phase 3 → The Connections Hub (Linking YouTube & Instagram via OAuth)
-Phase 4 → Cloud Storage & File Router (UploadThing setup)
-Phase 5 → Unified Dashboard UI & Routing
-Phase 6 → YouTube Scheduling Pipeline (UI + API Integration)
-Phase 7 → Instagram Scheduling Pipeline (UI + Graph API Integration)
-Phase 8 → The Scheduler Engine (BullMQ Workers & Redis)
-Phase 9 → Dashboard Separation & Restyling
+Phase 1  → Foundation & Basic Auth (Google Login - No YouTube Scopes)
+Phase 2  → Database Architecture (Multi-platform models)
+Phase 3  → The Connections Hub (Linking YouTube & Instagram via OAuth)
+Phase 4  → Cloud Storage & File Router (UploadThing setup)
+Phase 5  → Unified Dashboard UI & Routing
+Phase 6  → YouTube Scheduling Pipeline (UI + API Integration)
+Phase 7  → Instagram Scheduling Pipeline (UI + Graph API Integration)
+Phase 8  → The Scheduler Engine (BullMQ Workers & Redis)
+Phase 9  → Dashboard Separation & Restyling
 Phase 10 → Instagram Carousel Uploads
+Phase 11 → TikTok Scheduling Pipeline (UI + Content Posting API)
 ```
 
 ---
@@ -186,17 +190,90 @@ Set up Upstash Redis and configure a robust BullMQ worker that processes jobs pr
 ## Phase 9 — Dashboard Separation & Restyling
 
 ### 9.1 Goal
-Completely separate the YouTube and Instagram workspaces into distinct top-level routes (`/youtube-dashboard` and `/instagram-dashboard`) to treat both platforms as primary tools rather than sub-pages. Sync the styling so both look identically premium.
+Completely separate the YouTube, Instagram, and TikTok workspaces into distinct top-level routes to treat each platform as a primary tool. Sync the styling so all three look identically premium.
 
 ### 9.2 Route Restructuring
-- Move `app/dashboard/layout.tsx` to `app/(dashboards)/layout.tsx` so both paths share the Sidebar.
+- Move `app/dashboard/layout.tsx` to `app/(dashboards)/layout.tsx` so all platform paths share the Sidebar.
 - Move `app/dashboard/connect` to `app/(dashboards)/connect`.
 - Rename `app/dashboard` (the YouTube UI) to `app/(dashboards)/youtube-dashboard`.
 - Move `app/upload` into `app/(dashboards)/youtube-dashboard/upload`.
 - Move `app/dashboard/instagram` to `app/(dashboards)/instagram-dashboard`.
+- Reserve `app/(dashboards)/tiktok-dashboard` for Phase 11.
+
+---
+
+## Phase 10 — Instagram Carousel Uploads
+
+### 10.1 Goal
+Extend the Instagram Studio to support multi-image carousel posts (up to 10 slides) using the Graph API's `CAROUSEL` media type.
+
+### 10.2 Implementation
+- Add a **Carousel** option to the `mediaType` selector on the Instagram upload form.
+- Allow uploading up to 10 images per carousel; each must meet JPEG / aspect-ratio constraints.
+- Build a multi-step container creation flow:
+  1. Create individual child media containers for each image via `POST /{ig-user-id}/media` with `is_carousel_item=true`.
+  2. Create the parent carousel container via `POST /{ig-user-id}/media` with `media_type=CAROUSEL` and the list of child IDs.
+  3. Publish via `POST /{ig-user-id}/media_publish` with the carousel container ID.
+- Store the ordered list of `storageUrl`s in the `InstagramPost` model (new `mediaUrls: String[]` field).
+
+---
+
+## Phase 11 — TikTok Scheduling Pipeline
+
+### 11.1 Goal
+Build a dedicated TikTok workspace that mirrors the YouTube and Instagram dashboards in design and quality. Allow creators to upload videos and schedule them to publish to their TikTok account via the **TikTok Content Posting API**.
+
+### 11.2 Route Structure
+```
+app/(dashboards)/tiktok-dashboard/
+├── page.tsx          ← Sub-dashboard (Pending/Published TikTok videos)
+└── upload/page.tsx   ← TikTok specific upload form
+```
+
+### 11.3 Database Updates (`prisma/schema.prisma`)
+Add a new `TiktokPost` model:
+- `caption` — Post caption / description.
+- `privacyLevel` — `PUBLIC_TO_EVERYONE`, `MUTUAL_FOLLOW_FRIENDS`, or `SELF_ONLY`.
+- `allowDuet` / `allowStitch` / `allowComment` — Boolean toggles.
+- `videoUrl` — UploadThing URL of the uploaded video.
+- Shared fields: `userId`, `scheduledAt`, `status`, `externalId`, `errorMessage`.
+
+Add a `tiktok` provider entry to the `Account` model to store the TikTok `access_token` and `refresh_token`.
+
+### 11.4 Connections Hub Update (`app/(dashboards)/connect/page.tsx`)
+- Add a **TikTok** connection card beside YouTube and Instagram.
+- Trigger TikTok OAuth using the `/api/auth/tiktok` endpoint which requests the `video.publish` and `user.info.basic` scopes.
+- Store the resulting `access_token` and `refresh_token` in the `Account` table with `provider = "tiktok"`.
+
+### 11.5 Upload Form — UploadThing Router
+Add a `tiktokVideoUploader` endpoint to `app/api/uploadthing/core.ts`:
+- Max file size: **4GB** (TikTok API limit).
+- Accepted types: `.mp4`, `.mov`, `.webm`.
+
+### 11.6 TikTok API Integration (`lib/tiktok.ts`)
+The TikTok Content Posting API uses a **two-step direct post** flow:
+1. **Initialize Upload**: `POST https://open.tiktokapis.com/v2/post/publish/video/init/`
+   - Pass `post_info` (caption, privacy, duet/stitch/comment flags) and `source_info` (type: `PULL_FROM_URL`, `video_url` from UploadThing).
+   - Returns a `publish_id`.
+2. **Poll Status**: `GET https://open.tiktokapis.com/v2/post/publish/status/fetch/`
+   - Poll until status is `PUBLISH_COMPLETE` or `FAILED`.
+   - Store the final `share_id` as `externalId` in the DB.
+
+### 11.7 Scheduler Integration (`lib/queue.ts`)
+- Add a new `tiktok-upload` job type.
+- Worker branches to call `uploadToTikTok(job.data.postId)` which calls `lib/tiktok.ts`.
+- On failure: set `status = FAILED` and persist `errorMessage` so the dashboard displays it.
+
+### 11.8 Dashboard UI (`app/(dashboards)/tiktok-dashboard/page.tsx`)
+- Matches the YouTube and Instagram dashboard in layout, card design, status badges, and empty-state illustrations.
+- Shows `PENDING`, `UPLOADING`, `DONE`, and `FAILED` TikTok posts in the same grid/list pattern.
+
+---
 
 ## ⚠️ Important API Considerations
 
 1.  **Instagram Business/Creator Check**: Personal Instagram accounts cannot use auto-publish. We must verify account type during the Connection phase (Phase 3).
 2.  **Tokens**: Facebook/Instagram long-lived tokens expire after 60 days. The app needs a mechanism or prompt to refresh them. Google refresh tokens last indefinitely unless revoked.
 3.  **Local Hosting Issue**: When testing Instagram API locally (`localhost:3000`), the Graph API **requires** public URLs for media. UploadThing fulfills this requirement perfectly.
+4.  **TikTok OAuth**: TikTok requires app review before `video.publish` scope is available in production. Use the **Sandbox** environment for development; sandbox accounts must be added explicitly in the TikTok developer console.
+5.  **TikTok Token Refresh**: TikTok access tokens expire after **24 hours**; refresh tokens last **365 days**. Implement a background token-refresh routine or refresh on-demand before each publish job.

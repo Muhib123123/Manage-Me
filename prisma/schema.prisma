@@ -65,6 +65,7 @@ model User {
   sessions             Session[]
   youtubePosts         YoutubePost[]
   instagramPosts       InstagramPost[]
+  tiktokPosts          TiktokPost[]
   platformConnections  PlatformConnection[]
 
   createdAt DateTime @default(now())
@@ -155,6 +156,39 @@ model InstagramPost {
   // Status tracking
   status       String  @default("PENDING") // "PENDING" | "UPLOADING" | "DONE" | "FAILED"
   instagramId  String? // Instagram Media ID after successful publish
+  errorMessage String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// TikTok Post model
+// ─────────────────────────────────────────────
+
+model TiktokPost {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // TikTok metadata
+  caption      String? @db.Text
+  privacyLevel String  @default("PUBLIC_TO_EVERYONE") // "PUBLIC_TO_EVERYONE" | "MUTUAL_FOLLOW_FRIENDS" | "SELF_ONLY"
+
+  // Permission toggles
+  allowDuet    Boolean @default(true)
+  allowStitch  Boolean @default(true)
+  allowComment Boolean @default(true)
+
+  // Storage (UploadThing)
+  videoUrl String
+
+  // Scheduling
+  scheduledAt DateTime
+
+  // Status tracking
+  status       String  @default("PENDING") // "PENDING" | "UPLOADING" | "DONE" | "FAILED"
+  tiktokId     String? // TikTok share_id after successful publish
   errorMessage String?
 
   createdAt DateTime @default(now())

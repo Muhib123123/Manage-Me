@@ -40,38 +40,22 @@ export async function POST(
     }
 
     try {
-        // Mark as uploading
+        // Mark as uploading so the UI immediately reflects the state change
         await prisma.instagramPost.update({
             where: { id },
             data: { status: "UPLOADING" },
         });
 
-        const { uploadInstagramPhoto, uploadInstagramVideo } = await import("@/lib/instagram");
+        // Enqueue to the background worker so the API route doesn't timeout
+        // Instagram videos can take 5+ minutes to process.
+        const { instagramQueue } = await import("@/lib/queue-instagram");
+        await instagramQueue.add(`instagram-upload-${post.id}`, { postId: post.id });
 
-        const isReel = post.mediaType === "REEL";
-        const isVideo = post.mediaType === "VIDEO" || isReel;
-
-        let result;
-        if (isVideo) {
-            result = await uploadInstagramVideo(post.userId, post.mediaUrls, post.caption || "", isReel);
-        } else {
-            result = await uploadInstagramPhoto(post.userId, post.mediaUrls, post.caption || "");
-        }
-
-        // Mark as done
-        await prisma.instagramPost.update({
-            where: { id },
-            data: {
-                status: "DONE",
-                instagramId: result.id,
-            },
-        });
-
-        return NextResponse.json({ success: true, instagramId: result.id });
+        return NextResponse.json({ success: true, queued: true });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Unknown error";
 
-        // Mark as failed
+        // Mark as failed if we couldn't even enqueue
         await prisma.instagramPost.update({
             where: { id },
             data: { status: "FAILED", errorMessage: message },

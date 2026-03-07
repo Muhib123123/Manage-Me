@@ -39,6 +39,21 @@ function InstagramLogo({ size = 20 }: { size?: number }) {
     );
 }
 
+function TikTokLogo({ size = 20 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="48" height="48" rx="10" fill="#010101" />
+            <path
+                d="M32 10h-5v19.3a5.2 5.2 0 01-5.2 5.1 5.2 5.2 0 01-5.2-5.1 5.2 5.2 0 015.2-5.1c.5 0 1 .1 1.4.2V19a10.5 10.5 0 00-1.4-.1A10.5 10.5 0 0011.3 29.3a10.5 10.5 0 0010.5 10.5 10.5 10.5 0 0010.5-10.5V19.8a17.2 17.2 0 0010 3.2v-5.3A11.8 11.8 0 0132 10z"
+                fill="white"
+            />
+            <path d="M32 10h-5v19.3a5.2 5.2 0 01-5.2 5.1" stroke="#69C9D0" strokeWidth="1.2" fill="none" />
+            <path d="M13.5 24a10.5 10.5 0 000 10" stroke="#EE1D52" strokeWidth="1.2" fill="none" />
+        </svg>
+    );
+}
+
+
 function LinkIcon({ size = 20 }: { size?: number }) {
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
@@ -55,12 +70,14 @@ type NavItem = { href: string; label: string; icon: ReactNode; disabled?: boolea
 const navMain: NavItem[] = [
     { href: "/youtube-dashboard", label: "YouTube Hub", icon: <YouTubeLogo /> },
     { href: "/instagram-dashboard", label: "Instagram Hub", icon: <InstagramLogo /> },
+    { href: "/tiktok-dashboard", label: "TikTok Hub", icon: <TikTokLogo /> },
     { href: "/connect", label: "Connections", icon: <LinkIcon size={18} /> },
 ];
 
 const navUpload: NavItem[] = [
     { href: "/youtube-dashboard/upload", label: "YouTube Upload", icon: "⬆️" },
     { href: "/instagram-dashboard/upload", label: "Instagram Upload", icon: "⬆️" },
+    { href: "/tiktok-dashboard/upload", label: "TikTok Upload", icon: "⬆️" },
 ];
 
 /* ─── Component ───────────────────────────────────── */

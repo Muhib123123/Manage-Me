@@ -30,7 +30,7 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
     const leftBorder = STATUS_LEFT[post.status] ?? "border-l-slate-300";
 
     const handleUploadNow = async () => {
-        const platformName = post.platform === "YOUTUBE" ? "YouTube" : "Instagram";
+        const platformName = post.platform === "YOUTUBE" ? "YouTube" : post.platform === "TIKTOK" ? "TikTok" : "Instagram";
         const confirmed = await confirm({
             title: "Upload Now?",
             message: `Are you sure you want to trigger an immediate upload to ${platformName} for "${post.title}"?`,
@@ -43,10 +43,11 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
         setUploading(true);
         setUploadError("");
         try {
-            // TODO: Route for Instagram uploads will be built in Phase 6
             const apiRoute = post.platform === "YOUTUBE"
                 ? `/api/videos/${post.id}/upload`
-                : `/api/instagram/${post.id}/upload`;
+                : post.platform === "TIKTOK"
+                    ? `/api/tiktok/${post.id}/upload`
+                    : `/api/instagram/${post.id}/upload`;
 
             const res = await fetch(apiRoute, { method: "POST" });
             const data = await res.json();
@@ -69,14 +70,18 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
         });
         if (!confirmed) return;
 
-        const apiRoute = post.platform === "YOUTUBE" ? "/api/videos" : "/api/instagram/posts";
+        const apiRoute = post.platform === "YOUTUBE" ? "/api/videos"
+            : post.platform === "TIKTOK" ? "/api/tiktok/posts"
+                : "/api/instagram/posts";
         await fetch(`${apiRoute}?id=${post.id}`, { method: "DELETE" });
         router.refresh();
     };
 
     const liveUrl = post.platform === "YOUTUBE"
         ? (post.platformId ? `https://www.youtube.com/watch?v=${post.platformId}` : null)
-        : (post.platformId ? `https://www.instagram.com/p/${post.platformId}` : null);
+        : post.platform === "TIKTOK"
+            ? (post.platformId ? `https://www.tiktok.com/@me/video/${post.platformId}` : null)
+            : (post.platformId ? `https://www.instagram.com/p/${post.platformId}` : null);
 
     return (
         <div
@@ -121,12 +126,14 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
                     )}
 
                     <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-1">
-                        <span>{post.platform === "YOUTUBE" ? "YT" : "IG"}</span>
+                        <span>{post.platform === "YOUTUBE" ? "YT" : post.platform === "TIKTOK" ? "TT" : "IG"}</span>
                         <span className="opacity-50">|</span>
                         <span>
                             {post.platform === "INSTAGRAM"
                                 ? post.mediaType
-                                : (post.mediaType === "short" ? "SHORT" : "VIDEO")}
+                                : post.platform === "TIKTOK"
+                                    ? "VIDEO"
+                                    : (post.mediaType === "short" ? "SHORT" : "VIDEO")}
                         </span>
                     </div>
                 </div>
