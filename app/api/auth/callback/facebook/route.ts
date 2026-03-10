@@ -123,7 +123,7 @@ export async function GET(req: Request) {
         });
 
         // 7. Successful redirect back to the hub
-        return NextResponse.redirect(new URL(`/connect?success=Instagram`, req.url));
+        return NextResponse.redirect(new URL(`/instagram-dashboard?success=Instagram`, req.url));
 
     } catch (err: any) {
         console.error("Error setting up Instagram connection:", err);

@@ -2,13 +2,14 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import Image from "next/image";
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
 
     const handleGoogleSignIn = async () => {
         setLoading(true);
-        await signIn("google", { callbackUrl: "/youtube-dashboard" });
+        await signIn("google", { callbackUrl: "/dashboard" });
     };
 
     return (
@@ -27,13 +28,13 @@ export default function LoginPage() {
 
                 {/* Logo mark */}
                 <div className="text-center mb-10">
-                    <div className="w-12 h-12 rounded-xl bg-[var(--primary)] text-[var(--surface)] flex items-center justify-center mx-auto mb-6 text-xl shadow-sm">
-                        🎬
+                    <div className="w-24 h-24 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-sm">
+                        <Image src="/logo.png" alt="Logo" width={100} height={100} />
                     </div>
 
-                    <h1 className="text-4xl font-semibold tracking-tight mb-3 text-[var(--text)]">
-                        Manage Me
-                    </h1>
+                    <div className="font-semibold mb-4 text-4xl lg:text-5xl">
+                        <span className="text-[var(--manage)]">Manage</span> <span className="text-[var(--me)]">Me</span>
+                    </div>
 
                     <p className="text-[var(--muted)] text-base leading-relaxed max-w-[280px] mx-auto">
                         Your unified studio to schedule posts across YouTube and Instagram.
@@ -42,7 +43,7 @@ export default function LoginPage() {
 
                 {/* Sign in button */}
                 <button
-                    className="btn-google h-12 w-full text-[15px] hover:bg-[var(--surface-2)] transition-colors duration-200"
+                    className="btn-google h-12 w-full text-[15px] hover:bg-[var(--surface-2)]"
                     onClick={handleGoogleSignIn}
                     disabled={loading}
                     style={{ opacity: loading ? 0.7 : 1 }}

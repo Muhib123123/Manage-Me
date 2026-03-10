@@ -86,14 +86,14 @@ export function DatePicker({ value, onChange, min, placeholder = "Pick a date", 
                 <span className={`flex-1 text-sm ${value ? "text-[var(--text)] font-medium" : "text-[var(--muted)]"}`}>
                     {displayValue || placeholder}
                 </span>
-                <svg className={`w-4 h-4 text-[var(--muted)] transition-transform duration-200 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg className={`w-4 h-4 text-[var(--muted)] ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
 
             {/* Dropdown calendar */}
             <div
-                className={`absolute top-full left-0 mt-2 z-50 transition-all duration-200 ease-out origin-top-left
+                className={`absolute top-full left-0 mt-2 z-50 ease-out origin-top-left
                     ${open ? "opacity-100 scale-100 translate-y-0 pointer-events-auto" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"}
                 `}
             >
@@ -221,14 +221,14 @@ export function TimePicker({ value, onChange, placeholder = "Pick a time", id }:
                 <span className={`flex-1 text-sm ${value ? "text-[var(--text)] font-medium" : "text-[var(--muted)]"}`}>
                     {displayValue || placeholder}
                 </span>
-                <svg className={`w-4 h-4 text-[var(--muted)] transition-transform duration-200 ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg className={`w-4 h-4 text-[var(--muted)] ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
 
             {/* Dropdown */}
             <div
-                className={`absolute top-full left-0 mt-2 z-50 transition-all duration-200 ease-out origin-top-left
+                className={`absolute top-full left-0 mt-2 z-50 ease-out origin-top-left
                     ${open ? "opacity-100 scale-100 translate-y-0 pointer-events-auto" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"}
                 `}
             >

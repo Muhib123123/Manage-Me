@@ -17,7 +17,7 @@ function formatSize(bytes: number) {
 
 const inputCls =
     "w-full px-4 py-3 rounded-xl border border-[var(--border-solid)] bg-[var(--surface)] " +
-    "text-[var(--text)] text-sm outline-none transition-all duration-150 " +
+    "text-[var(--text)] text-sm outline-none " +
     "focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 " +
     "placeholder:text-[var(--muted)]";
 
@@ -44,13 +44,13 @@ function UploadedMediaCard({
     onVideoLoaded?: () => void;
 }) {
     return (
-        <div className="rounded-xl w-full max-w-[400px] overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group transition-all duration-300 hover:shadow-[var(--shadow-md)]">
+        <div className="rounded-xl w-full max-w-[400px] overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group hover:shadow-[var(--shadow-md)]">
             {/* Preview */}
             <div className="relative aspect-video bg-[var(--surface-2)] overflow-hidden">
                 {kind === "video" ? (
                     previewFrame ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={previewFrame} alt="Preview" className="w-full h-full object-cover grayscale-[20%] group-hover:scale-105 transition-transform duration-500 ease-out" />
+                        <img src={previewFrame} alt="Preview" className="w-full h-full object-cover grayscale-[20%] group-hover:scale-105 ease-out" />
                     ) : (
                         <video
                             ref={videoRef}
@@ -58,13 +58,13 @@ function UploadedMediaCard({
                             preload="metadata"
                             muted
                             playsInline
-                            className="w-full h-full object-cover grayscale-[20%] group-hover:scale-105 transition-transform duration-500 ease-out"
+                            className="w-full h-full object-cover grayscale-[20%] group-hover:scale-105 ease-out"
                             onLoadedMetadata={onVideoLoaded}
                         />
                     )
                 ) : (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={url} alt="Thumbnail" className="w-full h-full object-cover grayscale-[20%] group-hover:scale-105 transition-transform duration-500 ease-out" />
+                    <img src={url} alt="Thumbnail" className="w-full h-full object-cover grayscale-[20%] group-hover:scale-105 ease-out" />
                 )}
 
                 <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
@@ -83,7 +83,7 @@ function UploadedMediaCard({
                 <button
                     type="button"
                     onClick={onRemove}
-                    className="absolute top-3 right-3 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 backdrop-blur-md w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer opacity-100 md:opacity-0 md:group-hover:opacity-100 border border-white/10 shadow-sm"
+                    className="absolute top-3 right-3 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 backdrop-blur-md w-7 h-7 flex items-center justify-center rounded-full cursor-pointer opacity-100 md:opacity-0 md:group-hover:opacity-100 border border-white/10 shadow-sm"
                     aria-label="Remove uploaded file"
                 >
                     ✕
@@ -131,7 +131,7 @@ function UploadZone({
 
                     <div className="w-full h-1 bg-[var(--border-solid)] rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-[var(--primary)] transition-all duration-300 ease-out"
+                            className="h-full bg-[var(--primary)] ease-out"
                             style={{ width: `${progress}%` }}
                         />
                     </div>
@@ -139,7 +139,7 @@ function UploadZone({
             )}
 
             {!uploading && (
-                <div className="w-full max-w-[400px] border border-dashed border-[var(--border-solid)] hover:border-[var(--text)] rounded-xl bg-[var(--surface-2)] transition-colors duration-300 p-10 flex flex-col items-center gap-3">
+                <div className="w-full max-w-[400px] border border-dashed border-[var(--border-solid)] hover:border-[var(--text)] rounded-xl bg-[var(--surface-2)] p-10 flex flex-col items-center gap-3">
                     <svg className="w-8 h-8 text-[var(--muted)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                     </svg>
@@ -298,7 +298,7 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                                 type="button"
                                 onClick={() => setMediaType(value)}
                                 className={[
-                                    "flex flex-col gap-1.5 p-5 rounded-xl text-left transition-all duration-300 border cursor-pointer group",
+                                    "flex flex-col gap-1.5 p-5 rounded-xl text-left border cursor-pointer group",
                                     mediaType === value
                                         ? "border-[var(--text)] bg-[var(--surface-2)] shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:shadow-none"
                                         : "border-[var(--border-solid)] bg-transparent hover:bg-[var(--surface)] hover:border-[var(--text)]/30",
@@ -307,7 +307,7 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                                 <div className={`font-semibold text-base ${mediaType === value ? "text-[var(--text)]" : "text-[var(--text)]"}`}>
                                     {label}
                                 </div>
-                                <div className="text-sm text-[var(--muted)] group-hover:text-[var(--text)]/70 transition-colors">{desc}</div>
+                                <div className="text-sm text-[var(--muted)] group-hover:text-[var(--text)]/70">{desc}</div>
                             </button>
                         ))}
                     </div>
@@ -446,7 +446,7 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                     <button
                         type="submit"
                         disabled={submitStatus === "saving" || mediaUploading}
-                        className="px-8 py-4 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-base rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] dark:shadow-none min-w-[200px] cursor-pointer"
+                        className="px-8 py-4 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-base rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] dark:shadow-none min-w-[200px] cursor-pointer"
                     >
                         {submitStatus === "saving"
                             ? "Scheduling..."
@@ -477,7 +477,7 @@ function SectionLabel({ text, required, optional, hint }: {
     text: string; required?: boolean; optional?: boolean; hint?: string;
 }) {
     return (
-        <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--text)] transition-colors duration-300">
+        <label className="flex items-center gap-1.5 text-sm font-medium text-[var(--text)]">
             {text}
             {required && <span className="text-red-500" aria-label="required">*</span>}
             {optional && <span className="font-normal tracking-wide text-[var(--muted)] text-xs uppercase ml-2">(optional)</span>}

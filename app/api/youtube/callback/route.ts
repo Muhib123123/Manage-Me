@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
         });
 
         // Redirect back to the connections hub
-        return NextResponse.redirect(new URL("/connect?success=youtube", req.url));
+        return NextResponse.redirect(new URL("/youtube-dashboard?success=youtube", req.url));
     } catch (err: any) {
         console.error("Failed to exchange YouTube token:", err);
         return NextResponse.redirect(new URL("/connect?error=youtube_exchange_failed", req.url));

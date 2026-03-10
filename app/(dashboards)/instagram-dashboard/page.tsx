@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { VideoRow } from "@/components/VideoRow";
 import { UnifiedPost } from "@/types";
@@ -8,7 +9,7 @@ export default async function InstagramDashboardPage() {
     const session = await auth();
     const userId = session!.user.id;
 
-    const [igPending, igPublished, igFailed] = await Promise.all([
+    const [igPending, igPublished, igFailed, connection] = await Promise.all([
         prisma.instagramPost.findMany({
             where: { userId, status: { in: ["PENDING", "UPLOADING"] } },
             orderBy: { scheduledAt: "asc" },
@@ -21,7 +22,14 @@ export default async function InstagramDashboardPage() {
             where: { userId, status: "FAILED" },
             orderBy: { updatedAt: "desc" },
         }),
+        prisma.platformConnection.findFirst({
+            where: { userId, platform: "INSTAGRAM" }
+        })
     ]);
+
+    if (!connection) {
+        redirect("/connect?error=Please connect your Instagram account first.");
+    }
 
     const normalizeIG = (posts: typeof igPending): UnifiedPost[] =>
         posts.map(p => ({

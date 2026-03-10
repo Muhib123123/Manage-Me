@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { VideoRow } from "@/components/VideoRow";
 import { UnifiedPost } from "@/types";
@@ -8,7 +9,7 @@ export default async function DashboardPage() {
     const session = await auth();
     const userId = session!.user.id;
 
-    const [ytPending, ytPublished, ytFailed] = await Promise.all([
+    const [ytPending, ytPublished, ytFailed, connection] = await Promise.all([
         // YouTube
         prisma.youtubePost.findMany({
             where: { userId, status: { in: ["PENDING", "UPLOADING"] } },
@@ -22,7 +23,14 @@ export default async function DashboardPage() {
             where: { userId, status: "FAILED" },
             orderBy: { updatedAt: "desc" },
         }),
+        prisma.platformConnection.findFirst({
+            where: { userId, platform: "YOUTUBE" }
+        })
     ]);
+
+    if (!connection) {
+        redirect("/connect?error=Please connect your YouTube account first.");
+    }
 
     const normalizeYT = (posts: typeof ytPending): UnifiedPost[] =>
         posts.map(p => ({
@@ -42,13 +50,13 @@ export default async function DashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-10">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight mb-2">
-                        Your Videos
+                        Youtube Schedule
                     </h1>
                     <p className="text-[var(--muted)] text-sm sm:text-base max-w-lg leading-relaxed">
                         Manage your scheduled and published YouTube content.
                     </p>
                 </div>
-                <Link href="/youtube-dashboard/upload" className="w-full sm:w-auto px-5 py-2.5 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-sm rounded-xl transition-all shadow-sm dark:shadow-none text-center flex items-center justify-center cursor-pointer">
+                <Link href="/youtube-dashboard/upload" className="w-full sm:w-auto px-5 py-2.5 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-sm rounded-xl shadow-sm dark:shadow-none text-center flex items-center justify-center cursor-pointer">
                     Schedule New Video +
                 </Link>
             </div>

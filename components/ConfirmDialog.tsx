@@ -69,7 +69,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             {/* Backdrop + Modal */}
             {state && (
                 <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-opacity duration-200"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
                     style={{ animation: "dialogFadeIn 0.2s ease-out" }}
                 >
                     {/* Backdrop */}
@@ -104,13 +104,13 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                         <div className="bg-[var(--surface-2)]/50 px-6 py-4 flex flex-col-reverse sm:flex-row justify-end gap-2 border-t border-[var(--border)]">
                             <button
                                 onClick={() => handleChoice(false)}
-                                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[var(--border-solid)] text-[14px] font-medium text-[var(--text)] bg-[var(--surface)] hover:bg-[var(--surface-2)] transition-colors duration-200 cursor-pointer"
+                                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-[var(--border-solid)] text-[14px] font-medium text-[var(--text)] bg-[var(--surface)] hover:bg-[var(--surface-2)] cursor-pointer"
                             >
                                 {state.options.cancelLabel ?? "No, stay here"}
                             </button>
                             <button
                                 onClick={() => handleChoice(true)}
-                                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-[14px] font-semibold transition-all duration-200 cursor-pointer ${config.confirmBtn}`}
+                                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-[14px] font-semibold cursor-pointer ${config.confirmBtn}`}
                             >
                                 {state.options.confirmLabel ?? "Yes, proceed"}
                             </button>

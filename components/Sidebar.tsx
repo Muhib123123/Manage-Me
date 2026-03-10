@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { useUpload } from "@/contexts/UploadContext";
 import { useConfirm } from "@/components/ConfirmDialog";
 import type { ReactNode } from "react";
+import Image from "next/image";
 
 /* ─── Brand SVG Icons ─────────────────────────────── */
 
@@ -63,28 +64,37 @@ function LinkIcon({ size = 20 }: { size?: number }) {
     );
 }
 
+function LockIcon({ size = 16 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0110 0v4" />
+        </svg>
+    );
+}
+
 /* ─── Nav data ────────────────────────────────────── */
 
-type NavItem = { href: string; label: string; icon: ReactNode; disabled?: boolean };
+type NavItem = { href: string; label: string; icon: ReactNode; platformKey?: string; disabled?: boolean };
 
 const navMain: NavItem[] = [
-    { href: "/youtube-dashboard", label: "YouTube Hub", icon: <YouTubeLogo /> },
-    { href: "/instagram-dashboard", label: "Instagram Hub", icon: <InstagramLogo /> },
-    { href: "/tiktok-dashboard", label: "TikTok Hub", icon: <TikTokLogo /> },
+    { href: "/youtube-dashboard", label: "YouTube Hub", icon: <YouTubeLogo />, platformKey: "YOUTUBE" },
+    { href: "/instagram-dashboard", label: "Instagram Hub", icon: <InstagramLogo />, platformKey: "INSTAGRAM" },
+    { href: "/tiktok-dashboard", label: "TikTok Hub", icon: <TikTokLogo />, platformKey: "TIKTOK" },
     { href: "/connect", label: "Connections", icon: <LinkIcon size={18} /> },
 ];
 
 const navUpload: NavItem[] = [
-    { href: "/youtube-dashboard/upload", label: "YouTube Upload", icon: "⬆️" },
-    { href: "/instagram-dashboard/upload", label: "Instagram Upload", icon: "⬆️" },
-    { href: "/tiktok-dashboard/upload", label: "TikTok Upload", icon: "⬆️" },
+    { href: "/youtube-dashboard/upload", label: "YouTube Upload", icon: "⬆️", platformKey: "YOUTUBE" },
+    { href: "/instagram-dashboard/upload", label: "Instagram Upload", icon: "⬆️", platformKey: "INSTAGRAM" },
+    { href: "/tiktok-dashboard/upload", label: "TikTok Upload", icon: "⬆️", platformKey: "TIKTOK" },
 ];
 
 /* ─── Component ───────────────────────────────────── */
 
-interface SidebarProps { onClose?: () => void; }
+interface SidebarProps { onClose?: () => void; connections?: string[]; }
 
-export default function Sidebar({ onClose }: SidebarProps) {
+export default function Sidebar({ onClose, connections = [] }: SidebarProps) {
     const path = usePathname();
     const router = useRouter();
     const { isUploading } = useUpload();
@@ -110,7 +120,19 @@ export default function Sidebar({ onClose }: SidebarProps) {
     };
 
     const renderLink = (item: NavItem) => {
+        const isLocked = item.platformKey ? !connections.includes(item.platformKey) : false;
         const active = path === item.href;
+
+        if (isLocked) {
+            return (
+                <div key={item.href} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium border-l-[3px] border-transparent text-[var(--muted)] opacity-50 cursor-not-allowed">
+                    <span className="shrink-0 leading-none flex items-center grayscale">{item.icon}</span>
+                    <span>{item.label}</span>
+                    <span className="ml-auto text-xs opacity-70"><LockIcon /></span>
+                </div>
+            );
+        }
+
         return (
             <Link
                 key={item.href}
@@ -138,11 +160,11 @@ export default function Sidebar({ onClose }: SidebarProps) {
         <aside className="w-[220px] h-full min-h-screen bg-[var(--surface)] border-r border-[var(--border-solid)] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-5 border-b border-[var(--border-solid)]">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-base shrink-0">
-                        🎬
+                <div className="flex items-center gap-2.5 h-10">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center text-base shrink-0">
+                        <Image src="/logo.png" alt="Logo" width={40} height={40} />
                     </div>
-                    <span className="font-extrabold text-sm gradient-text">Manage Me</span>
+                    <span className="font-extrabold text-md"><span className="text-[var(--manage)]">Manage</span><span className="text-[var(--me)] ml-1">Me</span></span>
                 </div>
                 {onClose && (
                     <button

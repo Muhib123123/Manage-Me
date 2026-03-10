@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { VideoRow } from "@/components/VideoRow";
 import { UnifiedPost } from "@/types";
@@ -8,7 +9,7 @@ export default async function TikTokDashboardPage() {
     const session = await auth();
     const userId = session!.user.id;
 
-    const [ttPending, ttPublished, ttFailed] = await Promise.all([
+    const [ttPending, ttPublished, ttFailed, connection] = await Promise.all([
         prisma.tiktokPost.findMany({
             where: { userId, status: { in: ["PENDING", "UPLOADING"] } },
             orderBy: { scheduledAt: "asc" },
@@ -21,7 +22,14 @@ export default async function TikTokDashboardPage() {
             where: { userId, status: "FAILED" },
             orderBy: { updatedAt: "desc" },
         }),
+        prisma.platformConnection.findFirst({
+            where: { userId, platform: "TIKTOK" }
+        })
     ]);
+
+    if (!connection) {
+        redirect("/connect?error=Please connect your TikTok account first.");
+    }
 
     const normalizeTT = (posts: typeof ttPending): UnifiedPost[] =>
         posts.map(p => ({
@@ -47,7 +55,7 @@ export default async function TikTokDashboardPage() {
                         Manage your scheduled and published TikTok videos.
                     </p>
                 </div>
-                <Link href="/tiktok-dashboard/upload" className="w-full sm:w-auto px-5 py-2.5 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-sm rounded-xl transition-all shadow-sm dark:shadow-none text-center flex items-center justify-center cursor-pointer">
+                <Link href="/tiktok-dashboard/upload" className="w-full sm:w-auto px-5 py-2.5 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-sm rounded-xl shadow-sm dark:shadow-none text-center flex items-center justify-center cursor-pointer">
                     Schedule New Video +
                 </Link>
             </div>

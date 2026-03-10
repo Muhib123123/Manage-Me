@@ -6,10 +6,11 @@ import Topbar from "./Topbar";
 
 interface Props {
     user: { name?: string | null; email?: string | null; image?: string | null };
+    connections: string[];
     children: React.ReactNode;
 }
 
-export default function DashboardShell({ user, children }: Props) {
+export default function DashboardShell({ user, connections, children }: Props) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isLg, setIsLg] = useState(false);
 
@@ -45,7 +46,7 @@ export default function DashboardShell({ user, children }: Props) {
                     transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
             >
-                <Sidebar onClose={() => setSidebarOpen(false)} />
+                <Sidebar onClose={() => setSidebarOpen(false)} connections={connections} />
             </div>
 
             {/* Main area */}

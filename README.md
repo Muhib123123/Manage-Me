@@ -41,6 +41,7 @@ A centralized hub that allows content creators to sign up, connect their **YouTu
 ```
 Phase 1  → Foundation & Basic Auth (Google Login - No YouTube Scopes)
 Phase 2  → Database Architecture (Multi-platform models)
+Phase 2.5→ The Onboarding Experience (Main Dashboard & Navigation Locks)
 Phase 3  → The Connections Hub (Linking YouTube & Instagram via OAuth)
 Phase 4  → Cloud Storage & File Router (UploadThing setup)
 Phase 5  → Unified Dashboard UI & Routing
@@ -82,6 +83,19 @@ Redesign the database schema to handle multiple connected platforms and uniquely
   - **YouTube Data requirements**: `title`, `description`, `tags`, `privacy`, `videoType` (Normal/Short), `thumbnailUrl`.
   - **Instagram Data requirements**: `caption`, `mediaType` (Image/Video/Reel), `aspectRatio` constraints.
   - **Shared Data requirements**: `userId`, `storageUrl`, `scheduledAt`, `status` (PENDING, UPLOADING, DONE, FAILED), `externalId` (the ID after publishing), `errorMessage`.
+
+---
+
+## Phase 2.5 — The Onboarding Experience
+
+### 2.5.1 Goal
+Create a welcoming main page for newly registered users that explains the core platform flow, rather than immediately dumping them into an empty workspace. Lock inaccessible platform features until connections are made.
+
+### 2.5.2 Implementation
+- **Redirects:** Update `app/login/page.tsx` and `app/page.tsx` to route authenticated users to `/dashboard` instead of `/youtube-dashboard`.
+- **The Onboarding Page (`/dashboard/page.tsx`):** A creative UI that explains the 3-step process: Connect -> Upload -> Schedule. It includes dynamic CTAs based on the user's current connection status.
+- **Visual Sidebar Locks:** `Sidebar.tsx` reads the user's connected platforms. Any unconnected platforms (YouTube, Instagram, TikTok) are grayed out, show a lock icon, and cannot be clicked.
+- **Server-Side Security:** Any direct URL access to a restricted dashboard (e.g. `/youtube-dashboard`) without an active connection will intercept the load and redirect the user back to `/connect` with an error message.
 
 ---
 

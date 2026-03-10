@@ -25,7 +25,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${playfair.variable} ${dmSans.variable} antialiased !transition-colors !duration-300`}>
+      <body className={`${playfair.variable} ${dmSans.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

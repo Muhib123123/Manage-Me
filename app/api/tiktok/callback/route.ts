@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
         });
 
         console.log(`✅ TikTok connected for user ${userId} (${platformName})`);
-        return NextResponse.redirect(new URL("/connect?success=TikTok", APP_BASE));
+        return NextResponse.redirect(new URL("/tiktok-dashboard?success=TikTok", APP_BASE));
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Unknown error";
         console.error("TikTok callback error:", message);

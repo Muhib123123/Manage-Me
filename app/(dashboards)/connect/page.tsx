@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ConnectButton } from "./ConnectButton";
 
 export default async function HubPage({ searchParams }: { searchParams: Promise<{ error?: string, success?: string }> }) {
     const session = await auth();
@@ -78,21 +78,21 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                                     <p className="text-xs text-[var(--muted)] truncate mt-0.5">ID: {ytConnection.platformId}</p>
                                 </div>
                             </div>
-                            <Link
+                            <ConnectButton
                                 href="/api/youtube/connect"
                                 className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors inline-flex justify-center py-2"
                             >
                                 Switch Channel
-                            </Link>
+                            </ConnectButton>
                         </div>
                     ) : (
                         <div>
-                            <Link
+                            <ConnectButton
                                 href="/api/youtube/connect"
                                 className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-300 text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium"
                             >
                                 Connect YouTube
-                            </Link>
+                            </ConnectButton>
                         </div>
                     )}
                 </div>
@@ -127,21 +127,21 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                                     <p className="text-xs text-[var(--muted)] truncate mt-0.5">ID: {igConnection.platformId}</p>
                                 </div>
                             </div>
-                            <Link
+                            <ConnectButton
                                 href="/api/instagram/connect"
                                 className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors inline-flex justify-center py-2"
                             >
                                 Switch Account
-                            </Link>
+                            </ConnectButton>
                         </div>
                     ) : (
                         <div>
-                            <Link
+                            <ConnectButton
                                 href="/api/instagram/connect"
                                 className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-300 text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium cursor-pointer"
                             >
                                 Connect Instagram
-                            </Link>
+                            </ConnectButton>
                         </div>
                     )}
                 </div>
@@ -176,21 +176,21 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                                     <p className="text-xs text-[var(--muted)] truncate mt-0.5">ID: {ttConnection.platformId}</p>
                                 </div>
                             </div>
-                            <Link
+                            <ConnectButton
                                 href="/api/tiktok/connect"
                                 className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors inline-flex justify-center py-2"
                             >
                                 Switch Account
-                            </Link>
+                            </ConnectButton>
                         </div>
                     ) : (
                         <div>
-                            <Link
+                            <ConnectButton
                                 href="/api/tiktok/connect"
                                 className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-300 text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium cursor-pointer"
                             >
                                 Connect TikTok
-                            </Link>
+                            </ConnectButton>
                         </div>
                     )}
                 </div>
