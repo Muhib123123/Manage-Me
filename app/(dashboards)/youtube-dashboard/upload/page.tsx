@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkLongUploadStatus } from "@/lib/youtube";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import UploadForm from "./UploadFormClient";
@@ -18,5 +19,7 @@ export default async function UploadPage() {
         redirect("/dashboard?error=Please connect your YouTube account first.");
     }
 
-    return <UploadForm channelName={ytConnection.platformName || "your channel"} />;
+    const isPhoneVerified = await checkLongUploadStatus(session.user.id);
+
+    return <UploadForm channelName={ytConnection.platformName || "your channel"} isPhoneVerified={isPhoneVerified} />;
 }

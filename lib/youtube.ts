@@ -53,6 +53,31 @@ export async function getAuthClient(userId: string) {
 }
 
 /**
+ * Checks if the user's connected YouTube channel is eligible for long uploads,
+ * which implies that the account is phone verified.
+ */
+export async function checkLongUploadStatus(userId: string): Promise<boolean> {
+    try {
+        const auth = await getAuthClient(userId);
+        const youtube = google.youtube({ version: "v3", auth });
+
+        const response = await youtube.channels.list({
+            part: ["status"],
+            mine: true,
+        });
+
+        const channel = response.data.items?.[0];
+        if (!channel || !channel.status) return false;
+
+        return channel.status.longUploadsStatus === "allowed";
+    } catch (error) {
+        console.error("Failed to check long upload status:", error);
+        return false;
+    }
+}
+
+
+/**
  * Fetch a file from a URL and returns it as a Node.js Readable stream
  * plus the Content-Length from the response headers (needed for resumable upload).
  */

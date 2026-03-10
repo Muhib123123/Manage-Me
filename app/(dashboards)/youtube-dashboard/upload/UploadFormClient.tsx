@@ -186,7 +186,7 @@ function UploadZone({
 }
 
 /* ─── Main Form ───────────────────────────────────── */
-export default function UploadForm({ channelName }: { channelName: string }) {
+export default function UploadForm({ channelName, isPhoneVerified = false }: { channelName: string; isPhoneVerified?: boolean }) {
     const router = useRouter();
     const { setIsUploading } = useUpload();
 
@@ -319,27 +319,49 @@ export default function UploadForm({ channelName }: { channelName: string }) {
 
                 {/* ── YouTube Verification Notice (Normal Video only) ── */}
                 {videoType === "video" && (
-                    <div className="flex items-start gap-4 px-5 py-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-solid)] text-sm">
-                        <span className="text-lg shrink-0 mt-0.5">ℹ️</span>
-                        <div className="flex flex-col gap-1.5 lg:text-base">
-                            <p className="font-semibold text-[var(--text)]">
-                                Verification required for videos over 15 minutes
-                            </p>
-                            <p className="text-[var(--muted)] leading-relaxed">
-                                Due to YouTube API rules, accounts must be phone-verified to upload long-form content.
-                            </p>
-                            <p className="text-[var(--text)] leading-relaxed mt-1 p-3 bg-[var(--surface)] border border-blue-500/30 rounded-lg shadow-sm">
-                                <strong>Important:</strong> You are currently connected to the channel <strong>"{channelName}"</strong>.
-                                <br />Before clicking the link below, please ensure you are logged into YouTube with the correct email for <strong>"{channelName}"</strong>, otherwise you might verify the wrong account.
-                            </p>
-                            <a
-                                href="https://www.youtube.com/verify"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex mt-2 items-center gap-2 underline text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
-                            >
-                                Go to youtube.com/verify →
-                            </a>
+                    <div className={`flex items-start gap-4 px-5 py-4 rounded-xl border text-sm ${
+                        isPhoneVerified 
+                            ? "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800" 
+                            : "bg-[var(--surface-2)] border-[var(--border-solid)]"
+                    }`}>
+                        <span className="text-lg shrink-0 mt-0.5">{isPhoneVerified ? "✅" : "ℹ️"}</span>
+                        <div className="flex flex-col gap-1.5 lg:text-base w-full">
+                            {isPhoneVerified ? (
+                                <>
+                                    <p className="font-semibold text-[var(--text)]">
+                                        Your account is verified
+                                    </p>
+                                    <p className="text-[var(--text)] leading-relaxed text-sm">
+                                        You can upload videos longer than 15 minutes to "{channelName}".
+                                    </p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="font-semibold text-[var(--text)]">
+                                        Verification required for videos over 15 minutes
+                                    </p>
+                                    <p className="text-[var(--muted)] leading-relaxed text-sm">
+                                        Due to YouTube API rules, accounts must be phone verified to upload long videos.
+                                    </p>
+                                    <p className="text-[var(--text)] leading-relaxed mt-1 p-3 bg-[var(--surface)] border border-blue-500/30 rounded-lg shadow-sm text-sm">
+                                        <strong className="text-yellow-300">Important:</strong> You are connected to <strong>{channelName}</strong>.
+                                        Ensure you are logged into YouTube with the correct email before verifying.
+                                    </p>
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-2">
+                                        <a
+                                            href="https://www.youtube.com/verify"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 underline text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium text-sm"
+                                        >
+                                            Go to youtube.com/verify →
+                                        </a>
+                                        <span className="sm:ml-auto text-[var(--muted)] text-xs font-medium">
+                                            Reload the page once verified
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
