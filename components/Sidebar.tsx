@@ -160,12 +160,16 @@ export default function Sidebar({ onClose, connections = [] }: SidebarProps) {
         <aside className="w-[220px] h-full min-h-screen bg-[var(--surface)] border-r border-[var(--border-solid)] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-5 border-b border-[var(--border-solid)]">
-                <div className="flex items-center gap-2.5 h-10">
+                <Link 
+                    href="/"
+                    onClick={(e) => handleNavClick(e, "/")}
+                    className="flex items-center gap-2.5 h-10 cursor-pointer"
+                >
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center text-base shrink-0">
                         <Image src="/logo.png" alt="Logo" width={40} height={40} />
                     </div>
                     <span className="font-extrabold text-md"><span className="text-[var(--manage)]">Manage</span><span className="text-[var(--me)] ml-1">Me</span></span>
-                </div>
+                </Link>
                 {onClose && (
                     <button
                         onClick={onClose}

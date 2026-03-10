@@ -23,6 +23,7 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
     const router = useRouter();
     const confirm = useConfirm();
     const [uploading, setUploading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [uploadError, setUploadError] = useState("");
     const [videoError, setVideoError] = useState(false);
 
@@ -70,11 +71,16 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
         });
         if (!confirmed) return;
 
-        const apiRoute = post.platform === "YOUTUBE" ? "/api/videos"
-            : post.platform === "TIKTOK" ? "/api/tiktok/posts"
-                : "/api/instagram/posts";
-        await fetch(`${apiRoute}?id=${post.id}`, { method: "DELETE" });
-        router.refresh();
+        setDeleting(true);
+        try {
+            const apiRoute = post.platform === "YOUTUBE" ? "/api/videos"
+                : post.platform === "TIKTOK" ? "/api/tiktok/posts"
+                    : "/api/instagram/posts";
+            await fetch(`${apiRoute}?id=${post.id}`, { method: "DELETE" });
+            router.refresh();
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const liveUrl = post.platform === "YOUTUBE"
@@ -188,9 +194,15 @@ export function VideoRow({ post, showError }: { post: UnifiedPost; showError?: b
                     {post.status !== "DONE" && post.status !== "UPLOADING" && (
                         <button
                             onClick={handleDelete}
-                            className="px-3 py-1.5 rounded-lg border border-[var(--border-solid)] bg-transparent text-[var(--muted)] text-[11px] sm:text-xs font-medium cursor-pointer hover:text-red-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20"
+                            disabled={deleting || uploading}
+                            className="px-3 py-1.5 rounded-lg border border-[var(--border-solid)] bg-transparent text-[var(--muted)] text-[11px] sm:text-xs font-medium cursor-pointer hover:text-red-600 hover:border-red-300 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[32px]"
                         >
-                            ✕
+                            {deleting ? (
+                                <svg className="animate-spin h-3 w-3 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            ) : "✕"}
                         </button>
                     )}
                 </div>
