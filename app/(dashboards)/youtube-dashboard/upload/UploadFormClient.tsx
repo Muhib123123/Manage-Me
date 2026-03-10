@@ -21,6 +21,23 @@ const inputCls =
     "focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 " +
     "placeholder:text-[var(--muted)]";
 
+function getVideoDimensions(file: File): Promise<{ width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const video = document.createElement("video");
+        video.onloadedmetadata = () => {
+            URL.revokeObjectURL(url);
+            resolve({ width: video.videoWidth, height: video.videoHeight });
+        };
+        video.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("Failed to load video metadata"));
+        };
+        video.src = url;
+    });
+}
+
+
 /* ─── Sub-component: progress + preview card ─────── */
 function UploadedMediaCard({
     kind,
@@ -32,8 +49,9 @@ function UploadedMediaCard({
     onRemove,
     videoRef,
     onVideoLoaded,
+    orientation = "horizontal",
 }: {
-    kind: "video" | "image";
+    kind: "video" | "image" | "thumbnail";
     url: string;
     fileName: string;
     fileSize: number;
@@ -42,11 +60,16 @@ function UploadedMediaCard({
     onRemove: () => void;
     videoRef?: React.RefObject<HTMLVideoElement | null>;
     onVideoLoaded?: () => void;
+    orientation?: "horizontal" | "vertical";
 }) {
     return (
-        <div className="rounded-xl w-full max-w-[400px] overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group hover:shadow-[var(--shadow-md)]">
+        <div className={`rounded-xl w-full overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group hover:shadow-[var(--shadow-md)] ${
+            orientation === "vertical" ? "max-w-[280px] mx-auto" : "max-w-[400px]"
+        }`}>
             {/* Preview */}
-            <div className="relative aspect-video bg-[var(--surface-2)] overflow-hidden">
+            <div className={`relative bg-[var(--surface-2)] overflow-hidden ${
+                orientation === "vertical" ? "aspect-[9/16]" : "aspect-video"
+            }`}>
                 {kind === "video" ? (
                     previewFrame ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -118,23 +141,39 @@ function UploadZone({
     progress: number;
     uploading: boolean;
     fileSize: number;
-    onBeforeUpload: (files: File[]) => File[];
+    onBeforeUpload: (files: File[]) => File[] | Promise<File[]>;
     onProgress: (p: number) => void;
     onComplete: (url: string) => void;
     onError: (msg: string) => void;
 }) {
+    const [displayProgress, setDisplayProgress] = useState(0);
+
+    useEffect(() => {
+        if (!uploading) {
+            setDisplayProgress(0);
+            return;
+        }
+        const i = setInterval(() => {
+            setDisplayProgress((prev) => {
+                if (prev < progress) return prev + 1;
+                return progress;
+            });
+        }, 20);
+        return () => clearInterval(i);
+    }, [progress, uploading]);
+
     return (
         <div className="flex flex-col">
             {uploading && (
                 <div className="rounded-xl w-full max-w-[400px] border border-[var(--border-solid)] bg-[var(--surface-2)] p-6 flex flex-col justify-center h-[200px]">
                     <div className="flex items-end justify-between mb-4">
                         <span className="text-sm font-semibold text-[var(--text)]">Uploading</span>
-                        <span className="text-2xl font-light text-[var(--primary)]">{progress}%</span>
+                        <span className="text-2xl font-light text-[var(--primary)]">{displayProgress}%</span>
                     </div>
                     <div className="w-full h-1 bg-[var(--border-solid)] rounded-full overflow-hidden">
                         <div
                             className="h-full bg-[var(--primary)] ease-out"
-                            style={{ width: `${progress}%` }}
+                            style={{ width: `${displayProgress}%` }}
                         />
                     </div>
                 </div>
@@ -164,9 +203,8 @@ function UploadZone({
                                 },
                                 allowedContent: { display: "none" },
                             }}
-                            onBeforeUploadBegin={(files) => {
-                                onBeforeUpload(files);
-                                return files;
+                            onBeforeUploadBegin={async (files) => {
+                                return await onBeforeUpload(files);
                             }}
                             onUploadProgress={(p) => onProgress(Math.round(p))}
                             onClientUploadComplete={(res) => {
@@ -192,13 +230,21 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
 
     const [videoType, setVideoType] = useState<"video" | "short">("video");
 
-    // Video upload state
-    const [videoUrl, setVideoUrl] = useState("");
-    const [videoProgress, setVideoProgress] = useState(0);
-    const [videoUploading, setVideoUploading] = useState(false);
-    const [videoFileSize, setVideoFileSize] = useState(0);
-    const [videoFileName, setVideoFileName] = useState("");
-    const [videoPreviewFrame, setVideoPreviewFrame] = useState("");
+    // Normal Video upload state
+    const [normalVideoUrl, setNormalVideoUrl] = useState("");
+    const [normalVideoProgress, setNormalVideoProgress] = useState(0);
+    const [normalVideoUploading, setNormalVideoUploading] = useState(false);
+    const [normalVideoFileSize, setNormalVideoFileSize] = useState(0);
+    const [normalVideoFileName, setNormalVideoFileName] = useState("");
+    const [normalVideoPreviewFrame, setNormalVideoPreviewFrame] = useState("");
+
+    // Short Video upload state
+    const [shortVideoUrl, setShortVideoUrl] = useState("");
+    const [shortVideoProgress, setShortVideoProgress] = useState(0);
+    const [shortVideoUploading, setShortVideoUploading] = useState(false);
+    const [shortVideoFileSize, setShortVideoFileSize] = useState(0);
+    const [shortVideoFileName, setShortVideoFileName] = useState("");
+    const [shortVideoPreviewFrame, setShortVideoPreviewFrame] = useState("");
 
     // Thumbnail upload state
     const [thumbnailUrl, setThumbnailUrl] = useState("");
@@ -230,17 +276,25 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
             const ctx = canvas.getContext("2d");
             if (ctx) {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                setVideoPreviewFrame(canvas.toDataURL("image/jpeg", 0.75));
+                const frameUrl = canvas.toDataURL("image/jpeg", 0.75);
+                if (videoType === "video") {
+                    setNormalVideoPreviewFrame(frameUrl);
+                } else {
+                    setShortVideoPreviewFrame(frameUrl);
+                }
             }
         } catch {
             // CORS may block — video element still shows the frame natively
         }
     };
 
+    const activeVideoUrl = videoType === "video" ? normalVideoUrl : shortVideoUrl;
+    const activeVideoUploading = videoType === "video" ? normalVideoUploading : shortVideoUploading;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
-        if (!videoUrl) { setError("Please upload a video file."); return; }
+        if (!activeVideoUrl) { setError("Please upload a video file."); return; }
         if (!title.trim()) { setError("Please enter a video title."); return; }
         if (!scheduledDate || !scheduledTime) { setError("Please set a scheduled date and time."); return; }
         const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
@@ -256,7 +310,7 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                     description: description.trim(),
                     tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
                     privacy, videoType,
-                    storageUrl: videoUrl,
+                    storageUrl: activeVideoUrl,
                     thumbnailUrl: thumbnailUrl || null,
                     scheduledAt,
                 }),
@@ -300,7 +354,10 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                             <button
                                 key={value}
                                 type="button"
-                                onClick={() => setVideoType(value)}
+                                onClick={() => {
+                                    setVideoType(value);
+                                    setError("");
+                                }}
                                 className={[
                                     "flex flex-col gap-1.5 p-5 rounded-xl text-left  border cursor-pointer group",
                                     videoType === value
@@ -372,55 +429,134 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
 
                         {/* Video file */}
                         <div className="flex flex-col gap-4">
-                            <SectionLabel text="Video File" required />
-                            {videoUrl ? (
-                                <UploadedMediaCard
-                                    kind="video"
-                                    url={videoUrl}
-                                    fileName={videoFileName}
-                                    fileSize={videoFileSize}
-                                    progress={videoProgress}
-                                    previewFrame={videoPreviewFrame}
-                                    videoRef={videoRef}
-                                    onVideoLoaded={captureVideoFrame}
-                                    onRemove={() => {
-                                        setVideoUrl(""); setVideoProgress(0);
-                                        setVideoFileSize(0); setVideoFileName("");
-                                        setVideoPreviewFrame("");
-                                        setIsUploading(false);
-                                    }}
-                                />
+                            <SectionLabel text={videoType === "video" ? "Video File" : "Vertical Short File"} required />
+                            {videoType === "video" ? (
+                                normalVideoUrl ? (
+                                    <UploadedMediaCard
+                                        kind="video"
+                                        url={normalVideoUrl}
+                                        fileName={normalVideoFileName}
+                                        fileSize={normalVideoFileSize}
+                                        progress={normalVideoProgress}
+                                        previewFrame={normalVideoPreviewFrame}
+                                        videoRef={videoRef}
+                                        onVideoLoaded={captureVideoFrame}
+                                        onRemove={() => {
+                                            setNormalVideoUrl(""); setNormalVideoProgress(0);
+                                            setNormalVideoFileSize(0); setNormalVideoFileName("");
+                                            setNormalVideoPreviewFrame("");
+                                            setIsUploading(false);
+                                        }}
+                                    />
+                                ) : (
+                                    <UploadZone
+                                        endpoint="videoUploader"
+                                        label="Upload normal video"
+                                        hint="MP4, MOV, AVI — max 2GB (Horizontal)"
+                                        progress={normalVideoProgress}
+                                        uploading={normalVideoUploading}
+                                        fileSize={normalVideoFileSize}
+                                        onBeforeUpload={async (files) => {
+                                            const f = files[0];
+                                            if (f) {
+                                                try {
+                                                    const { width, height } = await getVideoDimensions(f);
+                                                    
+                                                    if (height > width) {
+                                                        setError("Normal videos must be horizontal.");
+                                                        return [];
+                                                    }
+                                                    
+                                                    setError("");
+                                                    setNormalVideoFileSize(f.size);
+                                                    setNormalVideoFileName(f.name);
+                                                    setNormalVideoUploading(true);
+                                                    setNormalVideoProgress(0);
+                                                    setIsUploading(true);
+                                                } catch {
+                                                    setError("Could not read video dimensions.");
+                                                    return [];
+                                                }
+                                            }
+                                            return files;
+                                        }}
+                                        onProgress={(p) => setNormalVideoProgress(p)}
+                                        onComplete={(url) => {
+                                            setNormalVideoUrl(url);
+                                            setNormalVideoUploading(false);
+                                            setIsUploading(false);
+                                        }}
+                                        onError={(msg) => {
+                                            setError(msg);
+                                            setNormalVideoUploading(false);
+                                            setIsUploading(false);
+                                        }}
+                                    />
+                                )
                             ) : (
-                                <UploadZone
-                                    endpoint="videoUploader"
-                                    label="Upload video file"
-                                    hint="MP4, MOV, AVI — max 2GB"
-                                    progress={videoProgress}
-                                    uploading={videoUploading}
-                                    fileSize={videoFileSize}
-                                    onBeforeUpload={(files) => {
-                                        const f = files[0];
-                                        if (f) {
-                                            setVideoFileSize(f.size);
-                                            setVideoFileName(f.name);
-                                            setVideoUploading(true);
-                                            setVideoProgress(0);
-                                            setIsUploading(true);
-                                        }
-                                        return files;
-                                    }}
-                                    onProgress={(p) => setVideoProgress(p)}
-                                    onComplete={(url) => {
-                                        setVideoUrl(url);
-                                        setVideoUploading(false);
-                                        setIsUploading(false);
-                                    }}
-                                    onError={(msg) => {
-                                        setError(msg);
-                                        setVideoUploading(false);
-                                        setIsUploading(false);
-                                    }}
-                                />
+                                shortVideoUrl ? (
+                                    <UploadedMediaCard
+                                        kind="video"
+                                        orientation="vertical"
+                                        url={shortVideoUrl}
+                                        fileName={shortVideoFileName}
+                                        fileSize={shortVideoFileSize}
+                                        progress={shortVideoProgress}
+                                        previewFrame={shortVideoPreviewFrame}
+                                        videoRef={videoRef}
+                                        onVideoLoaded={captureVideoFrame}
+                                        onRemove={() => {
+                                            setShortVideoUrl(""); setShortVideoProgress(0);
+                                            setShortVideoFileSize(0); setShortVideoFileName("");
+                                            setShortVideoPreviewFrame("");
+                                            setIsUploading(false);
+                                        }}
+                                    />
+                                ) : (
+                                    <UploadZone
+                                        endpoint="videoUploader"
+                                        label="Upload short video"
+                                        hint="MP4, MOV, AVI — max 2GB (Vertical, <60s)"
+                                        progress={shortVideoProgress}
+                                        uploading={shortVideoUploading}
+                                        fileSize={shortVideoFileSize}
+                                        onBeforeUpload={async (files) => {
+                                            const f = files[0];
+                                            if (f) {
+                                                try {
+                                                    const { width, height } = await getVideoDimensions(f);
+                                                    
+                                                    if (width > height) {
+                                                        setError("YouTube Shorts must be vertical.");
+                                                        return [];
+                                                    }
+                                                    
+                                                    setError("");
+                                                    setShortVideoFileSize(f.size);
+                                                    setShortVideoFileName(f.name);
+                                                    setShortVideoUploading(true);
+                                                    setShortVideoProgress(0);
+                                                    setIsUploading(true);
+                                                } catch {
+                                                    setError("Could not read video dimensions.");
+                                                    return [];
+                                                }
+                                            }
+                                            return files;
+                                        }}
+                                        onProgress={(p) => setShortVideoProgress(p)}
+                                        onComplete={(url) => {
+                                            setShortVideoUrl(url);
+                                            setShortVideoUploading(false);
+                                            setIsUploading(false);
+                                        }}
+                                        onError={(msg) => {
+                                            setError(msg);
+                                            setShortVideoUploading(false);
+                                            setIsUploading(false);
+                                        }}
+                                    />
+                                )
                             )}
                         </div>
 
@@ -485,6 +621,13 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                         </div>
 
                     </div>
+                    
+                    {/* ── Error banner ───────────────────────── */}
+                    {error && (
+                        <div className="px-5 py-4 mt-6 rounded-xl bg-red-50 text-red-700 text-sm font-medium border border-red-100 flex items-center gap-3">
+                            <span className="text-lg">⚠</span> {error}
+                        </div>
+                    )}
                 </FormCard>
 
                 {/* ── Card: Video Details ────────────────── */}
@@ -587,13 +730,6 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                     </div>
                 </FormCard>
 
-                {/* ── Error banner ───────────────────────── */}
-                {error && (
-                    <div className="px-5 py-4 rounded-xl bg-red-50 text-red-700 text-sm font-medium border border-red-100 flex items-center gap-3">
-                        <span className="text-lg">⚠</span> {error}
-                    </div>
-                )}
-
                 {/* ── Success banner ─────────────────────── */}
                 {submitStatus === "done" && (
                     <div className="px-5 py-4 rounded-xl bg-[var(--surface-2)] text-[var(--text)] text-sm font-medium border border-[var(--border-solid)] flex items-center gap-3">
@@ -606,12 +742,12 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                 <div className="pt-6 border-t border-[var(--border-solid)] flex justify-end">
                     <button
                         type="submit"
-                        disabled={submitStatus === "saving" || videoUploading || thumbnailUploading}
+                        disabled={submitStatus === "saving" || activeVideoUploading || thumbnailUploading}
                         className="px-8 py-4 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-base rounded-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] dark:shadow-none min-w-[200px] cursor-pointer"
                     >
                         {submitStatus === "saving"
                             ? "Saving..."
-                            : videoUploading || thumbnailUploading
+                            : activeVideoUploading || thumbnailUploading
                                 ? "Waiting for uploads..."
                                 : "Schedule Video"}
                     </button>

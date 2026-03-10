@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { UploadButton } from "@/lib/uploadthing";
 import { useUpload } from "@/contexts/UploadContext";
@@ -43,8 +43,8 @@ function UploadedVideoCard({
     onVideoLoaded?: () => void;
 }) {
     return (
-        <div className="rounded-xl w-full max-w-[400px] overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group hover:shadow-[var(--shadow-md)]">
-            <div className="relative aspect-[9/16] bg-[var(--surface-2)] overflow-hidden max-h-[320px]">
+        <div className="rounded-xl w-full max-w-[280px] mx-auto overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group hover:shadow-[var(--shadow-md)]">
+            <div className="relative aspect-[9/16] bg-[var(--surface-2)] overflow-hidden max-h-[500px]">
                 {previewFrame ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={previewFrame} alt="Preview" className="w-full h-full object-cover grayscale-[20%] group-hover:scale-105 ease-out" />
@@ -108,18 +108,34 @@ function UploadZone({
     onComplete: (urls: string[]) => void;
     onError: (msg: string) => void;
 }) {
+    const [displayProgress, setDisplayProgress] = useState(0);
+
+    useEffect(() => {
+        if (!uploading) {
+            setDisplayProgress(0);
+            return;
+        }
+        const i = setInterval(() => {
+            setDisplayProgress((prev) => {
+                if (prev < progress) return prev + 1;
+                return progress;
+            });
+        }, 20);
+        return () => clearInterval(i);
+    }, [progress, uploading]);
+
     return (
         <div className="flex flex-col">
             {uploading && (
                 <div className="rounded-xl w-full max-w-[400px] border border-[var(--border-solid)] bg-[var(--surface-2)] p-6 flex flex-col justify-center h-[200px]">
                     <div className="flex items-end justify-between mb-4">
                         <span className="text-sm font-semibold text-[var(--text)]">Uploading</span>
-                        <span className="text-2xl font-light text-[var(--primary)]">{progress}%</span>
+                        <span className="text-2xl font-light text-[var(--primary)]">{displayProgress}%</span>
                     </div>
                     <div className="w-full h-1 bg-[var(--border-solid)] rounded-full overflow-hidden">
                         <div
                             className="h-full bg-[var(--primary)] ease-out"
-                            style={{ width: `${progress}%` }}
+                            style={{ width: `${displayProgress}%` }}
                         />
                     </div>
                 </div>

@@ -32,6 +32,7 @@ function UploadedMediaCard({
     onRemove,
     videoRef,
     onVideoLoaded,
+    orientation = "horizontal",
 }: {
     kind: "video" | "image";
     url: string;
@@ -42,11 +43,16 @@ function UploadedMediaCard({
     onRemove: () => void;
     videoRef?: React.RefObject<HTMLVideoElement | null>;
     onVideoLoaded?: () => void;
+    orientation?: "horizontal" | "vertical";
 }) {
     return (
-        <div className="rounded-xl w-full max-w-[400px] overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group hover:shadow-[var(--shadow-md)]">
+        <div className={`rounded-xl w-full overflow-hidden border border-[var(--border-solid)] bg-[var(--surface)] shadow-[var(--shadow-sm)] group hover:shadow-[var(--shadow-md)] ${
+            orientation === "vertical" ? "max-w-[280px] mx-auto" : "max-w-[400px]"
+        }`}>
             {/* Preview */}
-            <div className="relative aspect-video bg-[var(--surface-2)] overflow-hidden">
+            <div className={`relative bg-[var(--surface-2)] overflow-hidden ${
+                orientation === "vertical" ? "aspect-[9/16]" : "aspect-video"
+            }`}>
                 {kind === "video" ? (
                     previewFrame ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -118,7 +124,21 @@ function UploadZone({
     onComplete: (urls: string[]) => void;
     onError: (msg: string) => void;
 }) {
+    const [displayProgress, setDisplayProgress] = useState(0);
 
+    useEffect(() => {
+        if (!uploading) {
+            setDisplayProgress(0);
+            return;
+        }
+        const i = setInterval(() => {
+            setDisplayProgress((prev) => {
+                if (prev < progress) return prev + 1;
+                return progress;
+            });
+        }, 20);
+        return () => clearInterval(i);
+    }, [progress, uploading]);
 
     return (
         <div className="flex flex-col">
@@ -126,13 +146,13 @@ function UploadZone({
                 <div className="rounded-xl w-full max-w-[400px] border border-[var(--border-solid)] bg-[var(--surface-2)] p-6 flex flex-col justify-center h-[200px]">
                     <div className="flex items-end justify-between mb-4">
                         <span className="text-sm font-semibold text-[var(--text)]">Uploading</span>
-                        <span className="text-2xl font-light text-[var(--primary)]">{progress}%</span>
+                        <span className="text-2xl font-light text-[var(--primary)]">{displayProgress}%</span>
                     </div>
 
                     <div className="w-full h-1 bg-[var(--border-solid)] rounded-full overflow-hidden">
                         <div
                             className="h-full bg-[var(--primary)] ease-out"
-                            style={{ width: `${progress}%` }}
+                            style={{ width: `${displayProgress}%` }}
                         />
                     </div>
                 </div>
@@ -322,6 +342,7 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                                     <UploadedMediaCard
                                         key={url}
                                         kind={mediaType === "PHOTO" ? "image" : "video"}
+                                        orientation={mediaType === "REEL" ? "vertical" : "horizontal"}
                                         url={url}
                                         fileName={mediaFiles[i]?.name || "upload"}
                                         fileSize={mediaFiles[i]?.size || 0}
