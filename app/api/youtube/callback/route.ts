@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 
+const APP_BASE = (process.env.NEXTAUTH_URL || "http://localhost:3000").trim().replace(/\/$/, "");
+
 export async function GET(req: NextRequest) {
     const session = await auth();
     if (!session) {
-        return NextResponse.redirect(new URL("/login", req.url));
+        return NextResponse.redirect(new URL("/login", APP_BASE));
     }
 
     const { searchParams } = new URL(req.url);
@@ -16,11 +18,11 @@ export async function GET(req: NextRequest) {
 
     if (error) {
         console.error("YouTube OAuth error:", error);
-        return NextResponse.redirect(new URL("/youtube-dashboard?error=youtube_auth_failed", req.url));
+        return NextResponse.redirect(new URL("/youtube-dashboard?error=youtube_auth_failed", APP_BASE));
     }
 
     if (!code || !state) {
-        return NextResponse.redirect(new URL("/youtube-dashboard?error=invalid_request", req.url));
+        return NextResponse.redirect(new URL("/youtube-dashboard?error=invalid_request", APP_BASE));
     }
 
     try {
@@ -89,9 +91,9 @@ export async function GET(req: NextRequest) {
         });
 
         // Redirect back to the connections hub
-        return NextResponse.redirect(new URL("/youtube-dashboard?success=youtube", req.url));
+        return NextResponse.redirect(new URL("/youtube-dashboard?success=youtube", APP_BASE));
     } catch (err: any) {
         console.error("Failed to exchange YouTube token:", err);
-        return NextResponse.redirect(new URL("/connect?error=youtube_exchange_failed", req.url));
+        return NextResponse.redirect(new URL("/connect?error=youtube_exchange_failed", APP_BASE));
     }
 }

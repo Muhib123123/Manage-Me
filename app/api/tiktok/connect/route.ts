@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, createHash } from "crypto";
 
 const TIKTOK_CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY!;
-const REDIRECT_URI = process.env.TIKTOK_REDIRECT_URI || `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/tiktok/callback`;
+const APP_BASE = (process.env.NEXTAUTH_URL || "http://localhost:3000").trim().replace(/\/$/, "");
+const REDIRECT_URI = `${APP_BASE}/api/tiktok/callback`;
 
 function generateCodeVerifier(): string {
     return randomBytes(48).toString("base64url");

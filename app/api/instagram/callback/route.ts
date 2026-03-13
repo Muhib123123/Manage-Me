@@ -19,11 +19,11 @@ export async function GET(req: Request) {
 
     if (error) {
         console.error("Instagram Direct Auth Error:", error_description);
-        return NextResponse.redirect(new URL(`${baseUrl}/connect?error=${encodeURIComponent(error_description || "Authentication failed")}`));
+        return NextResponse.redirect(new URL(`/connect?error=${encodeURIComponent(error_description || "Authentication failed")}`, baseUrl));
     }
 
     if (!code) {
-        return NextResponse.redirect(new URL(`${baseUrl}/connect?error=No+authorization+code+provided`));
+        return NextResponse.redirect(new URL("/connect?error=No+authorization+code+provided", baseUrl));
     }
 
     const clientId = process.env.INSTAGRAM_CLIENT_ID || process.env.AUTH_FACEBOOK_ID!;
@@ -114,10 +114,10 @@ export async function GET(req: Request) {
             },
         });
 
-        return NextResponse.redirect(new URL(`/instagram-dashboard?success=Instagram`, baseUrl));
+        return NextResponse.redirect(new URL("/instagram-dashboard?success=Instagram", baseUrl));
 
     } catch (err: any) {
         console.error("Error setting up direct Instagram connection:", err);
-        return NextResponse.redirect(new URL(`${baseUrl}/connect?error=${encodeURIComponent(err.message || "Failed to connect to Instagram")}`));
+        return NextResponse.redirect(new URL(`/connect?error=${encodeURIComponent(err.message || "Failed to connect to Instagram")}`, baseUrl));
     }
 }

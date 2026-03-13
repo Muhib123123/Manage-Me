@@ -6,7 +6,12 @@ import { VideoRow } from "@/components/VideoRow";
 import { UnifiedPost } from "@/types";
 import { AutoRefresh } from "@/components/AutoRefresh";
 
-export default async function InstagramDashboardPage() {
+export default async function InstagramDashboardPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ error?: string; success?: string }>;
+}) {
+    const { error, success } = await searchParams;
     const session = await auth();
     const userId = session!.user.id;
 
@@ -47,6 +52,16 @@ export default async function InstagramDashboardPage() {
     return (
         <div className="p-6">
             <AutoRefresh enabled={pending.length > 0} interval={10} />
+            {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium dark:bg-red-950/30 dark:border-red-900 dark:text-red-400">
+                    {error}
+                </div>
+            )}
+            {success && (
+                <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm font-medium dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400">
+                    Successfully connected {success}!
+                </div>
+            )}
             {/* ── Page Header ───────────────────────────── */}
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-10">
                 <div>

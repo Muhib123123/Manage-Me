@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 const TIKTOK_CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY!;
 const TIKTOK_CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET!;
-const REDIRECT_URI = process.env.TIKTOK_REDIRECT_URI || `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/tiktok/callback`;
-const APP_BASE = process.env.NEXTAUTH_URL || "http://localhost:3000";
+const APP_BASE = (process.env.NEXTAUTH_URL || "http://localhost:3000").trim().replace(/\/$/, "");
+const REDIRECT_URI = `${APP_BASE}/api/tiktok/callback`;
 
 export async function GET(req: NextRequest) {
     // NOTE: We intentionally do NOT call auth() here.

@@ -216,6 +216,15 @@ export default function TikTokUploadFormClient({ accountName }: { accountName: s
     const [submitStatus, setSubmitStatus] = useState<UploadStatus>("idle");
     const [error, setError] = useState("");
 
+    // Sync permissions with privacy level
+    useEffect(() => {
+        if (privacyLevel === "SELF_ONLY") {
+            setAllowDuet(false);
+            setAllowStitch(false);
+            setAllowComment(false);
+        }
+    }, [privacyLevel]);
+
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -388,27 +397,36 @@ export default function TikTokUploadFormClient({ accountName }: { accountName: s
                             { key: "allowDuet", label: "Allow Duet", desc: "Let others create Duets with this video", state: allowDuet, setter: setAllowDuet },
                             { key: "allowStitch", label: "Allow Stitch", desc: "Let others clip and integrate this video", state: allowStitch, setter: setAllowStitch },
                             { key: "allowComment", label: "Allow Comments", desc: "Let viewers comment on this video", state: allowComment, setter: setAllowComment },
-                        ] as const).map(({ key, label, desc, state, setter }) => (
-                            <label
-                                key={key}
-                                className="flex items-center justify-between p-4 rounded-xl border border-[var(--border-solid)] bg-[var(--surface)] cursor-pointer hover:bg-[var(--surface-2)] group"
-                            >
-                                <div>
-                                    <p className="text-sm font-medium text-[var(--text)]">{label}</p>
-                                    <p className="text-xs text-[var(--muted)] mt-0.5">{desc}</p>
-                                </div>
-                                <div className="relative ml-4 flex-shrink-0">
-                                    <input
-                                        type="checkbox"
-                                        checked={state}
-                                        onChange={(e) => setter(e.target.checked)}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-11 h-6 bg-[var(--border-solid)] peer-checked:bg-[var(--text)] rounded-full" />
-                                    <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-[var(--surface-2)] rounded-full shadow peer-checked:translate-x-5" />
-                                </div>
-                            </label>
-                        ))}
+                        ] as const).map(({ key, label, desc, state, setter }) => {
+                            const isDisabled = privacyLevel === "SELF_ONLY";
+                            return (
+                                <label
+                                    key={key}
+                                    className={[
+                                        "flex items-center justify-between p-4 rounded-xl border border-[var(--border-solid)] bg-[var(--surface)] group transition-colors",
+                                        isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-[var(--surface-2)]"
+                                    ].join(" ")}
+                                >
+                                    <div>
+                                        <p className="text-sm font-medium text-[var(--text)]">{label}</p>
+                                        <p className="text-xs text-[var(--muted)] mt-0.5">
+                                            {isDisabled ? "Not available for private videos" : desc}
+                                        </p>
+                                    </div>
+                                    <div className="relative ml-4 flex-shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={state}
+                                            onChange={(e) => setter(e.target.checked)}
+                                            disabled={isDisabled}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-[var(--border-solid)] peer-checked:bg-[var(--text)] rounded-full transition-colors" />
+                                        <div className="absolute top-0.5 left-0.5 w-5 h-5 bg-white dark:bg-[var(--surface-2)] rounded-full shadow peer-checked:translate-x-5 transition-transform" />
+                                    </div>
+                                </label>
+                            );
+                        })}
                     </div>
                 </FormCard>
 
