@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { VideoRow } from "@/components/VideoRow";
 import { UnifiedPost } from "@/types";
+import { AutoRefresh } from "@/components/AutoRefresh";
 
 export default async function TikTokDashboardPage() {
     const session = await auth();
@@ -45,6 +46,7 @@ export default async function TikTokDashboardPage() {
 
     return (
         <div className="p-6">
+            <AutoRefresh enabled={pending.length > 0} interval={10} />
             {/* ── Page Header ───────────────────────────── */}
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-10">
                 <div>

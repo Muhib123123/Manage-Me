@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { VideoRow } from "@/components/VideoRow";
 import { UnifiedPost } from "@/types";
+import { AutoRefresh } from "@/components/AutoRefresh";
 
 export default async function DashboardPage({
     searchParams,
@@ -51,6 +52,7 @@ export default async function DashboardPage({
 
     return (
         <div className="p-6">
+            <AutoRefresh enabled={pending.length > 0} interval={10} />
             {error && (
                 <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium dark:bg-red-950/30 dark:border-red-900 dark:text-red-400">
                     {error}
