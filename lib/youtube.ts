@@ -70,7 +70,14 @@ export async function checkLongUploadStatus(userId: string): Promise<boolean> {
         if (!channel || !channel.status) return false;
 
         return channel.status.longUploadsStatus === "allowed";
-    } catch (error) {
+    } catch (error: any) {
+        // If the refresh token is revoked or invalid, we want to propagate this error
+        // so the UI can redirect the user to re-authenticate.
+        if (error.message === "invalid_grant" || error.code === "400" || error.response?.data?.error === "invalid_grant") {
+            console.error("YouTube connection revoked (invalid_grant) for user:", userId);
+            throw new Error("invalid_grant");
+        }
+        
         console.error("Failed to check long upload status:", error);
         return false;
     }
@@ -237,7 +244,12 @@ export function translateYouTubeError(err: unknown): string {
         case "invalidCredentials":
         case "authError":
             return "Upload failed: Google credentials expired. Sign out and back in.";
+        case "invalid_grant":
+            return "Upload failed: YouTube connection has been revoked or expired. Please re-connect your account in the dashboard.";
         default:
+            if (raw.includes("invalid_grant")) {
+                return "Upload failed: YouTube connection expired. Please re-reconnect your account.";
+            }
             return `YouTube upload failed: ${raw}`;
     }
 }

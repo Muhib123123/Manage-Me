@@ -12,39 +12,24 @@ interface Props {
 
 export default function DashboardShell({ user, connections, children }: Props) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isLg, setIsLg] = useState(false);
-
-    useEffect(() => {
-        const mq = window.matchMedia("(min-width: 1024px)");
-        setIsLg(mq.matches);
-        const handler = (e: MediaQueryListEvent) => setIsLg(e.matches);
-        mq.addEventListener("change", handler);
-        return () => mq.removeEventListener("change", handler);
-    }, []);
 
     return (
-        <div className="flex h-screen bg-[var(--bg)]">
+        <div className="flex h-screen bg-[var(--bg)] overflow-hidden">
 
             {/* Mobile overlay */}
-            {!isLg && (
-                <div
-                    onClick={() => setSidebarOpen(false)}
-                    className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-                    style={{
-                        opacity: sidebarOpen ? 1 : 0,
-                        pointerEvents: sidebarOpen ? "auto" : "none",
-                        transition: "opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-                    }}
-                />
-            )}
-
-            {/* Sidebar */}
             <div
-                className={isLg ? "relative z-auto shrink-0" : "fixed inset-y-0 left-0 z-50"}
-                style={isLg ? {} : {
-                    transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
-                    transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
+                onClick={() => setSidebarOpen(false)}
+                className={`fixed inset-0 z-40 bg-black/40 lg:hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+                    }`}
+            />
+
+            {/* Sidebar Container */}
+            <div
+                className={`
+                    fixed inset-y-0 left-0 z-50 transform lg:static lg:translate-x-0 lg:z-auto lg:shrink-0
+                    transition-transform duration-300 ease-in-out
+                    ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+                `}
             >
                 <Sidebar onClose={() => setSidebarOpen(false)} connections={connections} />
             </div>

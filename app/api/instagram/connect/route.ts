@@ -11,27 +11,27 @@ export async function GET() {
     // We manually construct the Facebook OAuth URL to ensure we request the explicit scopes needed for Instagram Graph API.
     // We also use `state` to prevent CSRF.
 
-    const clientId = process.env.AUTH_FACEBOOK_ID;
+    const clientId = process.env.INSTAGRAM_CLIENT_ID || process.env.AUTH_FACEBOOK_ID;
 
-    // The redirect URI must match exactly what is in the App Dashboard (and the standard NextAuth callback)
-    const redirectUri = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/auth/callback/facebook`;
+    // Direct Instagram Login callback
+    const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").trim().replace(/\/$/, "");
+    const redirectUri = `${baseUrl}/api/instagram/callback`;
 
-    // The scopes required to publish to Instagram via the Graph API
+    console.log("Instagram Connect: Using redirect_uri:", redirectUri);
+
+    // Permissions for direct Instagram Professional login (Content Publishing)
     const scopes = [
-        "instagram_basic",
-        "instagram_content_publish",
-        "pages_show_list",
-        "pages_read_engagement",
-        "business_management"
+        "instagram_business_basic",
+        "instagram_business_content_publish",
+        "instagram_business_manage_insights",
+        "instagram_business_manage_comments"
     ].join(",");
 
-    const authUrl = new URL("https://www.facebook.com/v19.0/dialog/oauth");
+    const authUrl = new URL("https://www.instagram.com/oauth/authorize");
     authUrl.searchParams.append("client_id", clientId!);
     authUrl.searchParams.append("redirect_uri", redirectUri);
     authUrl.searchParams.append("response_type", "code");
     authUrl.searchParams.append("scope", scopes);
-    // Explicitly ask for consent to ensure we get a long-lived token
-    authUrl.searchParams.append("auth_type", "rerequest");
 
     return NextResponse.redirect(authUrl.toString());
 }

@@ -37,7 +37,7 @@ export default function LoginPage() {
                     </div>
 
                     <p className="text-[var(--muted)] text-base leading-relaxed max-w-[280px] mx-auto">
-                        Your unified studio to schedule posts across YouTube and Instagram.
+                        Your unified studio to schedule posts across YouTube, Instagram, and TikTok.
                     </p>
                 </div>
 

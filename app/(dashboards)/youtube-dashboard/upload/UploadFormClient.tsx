@@ -348,8 +348,8 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                 <FormCard title="Select Video Type">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {([
-                            { value: "video", label: "Normal Video", desc: "Standard horizontal format" },
-                            { value: "short", label: "YouTube Short", desc: "Vertical format under 60s" },
+                            { value: "video", label: "YouTube Videos", desc: "Standard horizontal format" },
+                            { value: "short", label: "YouTube Shorts", desc: "Vertical video under 3 minutes" },
                         ] as const).map(({ value, label, desc }) => (
                             <button
                                 key={value}

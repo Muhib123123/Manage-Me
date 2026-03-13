@@ -2,7 +2,9 @@ import { prisma } from "./prisma";
 
 // Helper to handle standard API responses/errors
 async function fetchGraphApi(endpoint: string, options: RequestInit = {}) {
-    const response = await fetch(`https://graph.facebook.com/v19.0/${endpoint}`, options);
+    // For the direct Instagram Login flow, we use the graph.instagram.com endpoint
+    const baseUrl = "https://graph.instagram.com/v19.0";
+    const response = await fetch(`${baseUrl}/${endpoint}`, options);
     const data = await response.json();
 
     if (data.error) {
