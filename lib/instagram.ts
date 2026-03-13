@@ -175,7 +175,6 @@ export async function uploadInstagramVideo(
             const statusUrl = `${creationId}?fields=status_code,status&access_token=${accessToken}`;
             const statusResponse = await fetchGraphApi(statusUrl);
 
-            console.log(`🎥 Video container ${creationId} status: ${statusResponse.status_code} (attempt ${attempts + 1})`);
 
             if (statusResponse.status_code === 'FINISHED') {
                 isReady = true;

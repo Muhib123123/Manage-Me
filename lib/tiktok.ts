@@ -33,7 +33,6 @@ export async function getValidTikTokToken(userId: string): Promise<string> {
     }
 
     // Token is expired or expiring — refresh it
-    console.log(`🔄 Refreshing TikTok token for user ${userId}...`);
 
     const res = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
         method: "POST",
@@ -68,7 +67,6 @@ export async function getValidTikTokToken(userId: string): Promise<string> {
         },
     });
 
-    console.log(`✅ TikTok token refreshed for user ${userId}`);
     return access_token;
 }
 
@@ -140,8 +138,6 @@ export async function initTikTokVideoPublish(
         media_type: "VIDEO",
     };
 
-    console.log("🚀 ~ TikTok Video Publish Init Payload ~");
-    console.log(JSON.stringify(initBody, null, 2));
 
     const initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
         method: "POST",
@@ -215,7 +211,6 @@ export async function pollTikTokPublishStatus(
 
         // The v2 status endpoint returns it as data.status
         const status = data?.data?.status;
-        console.log(`🔍 TikTok publish status (attempt ${attempt}):`, status);
 
         if (status === "PUBLISH_COMPLETE") {
             const publicUrlId = data?.data?.publicaly_available_post_id?.[0];

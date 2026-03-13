@@ -17,8 +17,6 @@ export async function GET() {
     const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").trim().replace(/\/$/, "");
     const redirectUri = `${baseUrl}/api/instagram/callback`;
 
-    console.log("Instagram Connect: Using redirect_uri:", redirectUri);
-
     // Permissions for direct Instagram Professional login (Content Publishing)
     const scopes = [
         "instagram_business_basic",

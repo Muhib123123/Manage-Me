@@ -66,7 +66,6 @@ if (!globalForWorker.instagramWorker && redisUrl) {
                     },
                 });
 
-                console.log(`✅ Job ${job.id}: Instagram post ${postId} uploaded successfully!`);
             } catch (error: any) {
                 // Mark as failed with error message
                 await prisma.instagramPost.update({

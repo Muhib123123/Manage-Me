@@ -142,10 +142,6 @@ export async function uploadVideoToYouTube(videoId: string): Promise<string> {
     // 5. Fetch video file stream + size for resumable upload
     const { stream: videoStream, contentLength } = await fetchFileStream(video.storageUrl);
 
-    console.log(
-        `📤 Uploading "${video.title}" to YouTube (${isShort ? "Short" : "Normal Video"}) ` +
-        `| Size: ${(contentLength / 1024 / 1024).toFixed(1)} MB`
-    );
 
     // 6. Upload to YouTube using resumable upload
     //    googleapis handles the resumable protocol automatically when a body stream is provided
@@ -187,7 +183,6 @@ export async function uploadVideoToYouTube(videoId: string): Promise<string> {
                 const pct = contentLength
                     ? Math.round((evt.bytesRead / contentLength) * 100)
                     : "?";
-                console.log(`  ⬆ Upload progress: ${pct}%`);
             },
             // Force resumable upload — googleapis auto-selects this for streams > 5MB
             // but we make it explicit here.
@@ -200,7 +195,6 @@ export async function uploadVideoToYouTube(videoId: string): Promise<string> {
     const youtubeVideoId = uploadRes.data.id;
     if (!youtubeVideoId) throw new Error("YouTube upload succeeded but returned no video ID");
 
-    console.log(`✅ Upload complete! YouTube video ID: ${youtubeVideoId}`);
 
     // 7. Upload custom thumbnail (normal videos only — Shorts auto-generate one)
     if (!isShort && video.thumbnailUrl) {
@@ -210,7 +204,6 @@ export async function uploadVideoToYouTube(videoId: string): Promise<string> {
                 videoId: youtubeVideoId,
                 media: { mimeType: "image/jpeg", body: thumbStream },
             });
-            console.log(`🖼️ Thumbnail uploaded for ${youtubeVideoId}`);
         } catch (thumbErr) {
             // Non-fatal — video is already live, thumbnail is optional
             console.error("Thumbnail upload failed (non-fatal):", thumbErr);

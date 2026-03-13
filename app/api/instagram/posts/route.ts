@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
             { postId: post.id },
             { delay }
         );
-        console.log(`✅ Queued Instagram post ${post.id} to upload in ${Math.round(delay / 1000)}s`);
     } catch (queueErr) {
         console.error("Failed to enqueue instagram upload:", queueErr);
         // We still return 201 because the post was saved

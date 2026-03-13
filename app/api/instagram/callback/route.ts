@@ -29,7 +29,6 @@ export async function GET(req: Request) {
     const clientId = process.env.INSTAGRAM_CLIENT_ID || process.env.AUTH_FACEBOOK_ID!;
     const clientSecret = process.env.INSTAGRAM_CLIENT_SECRET || process.env.AUTH_FACEBOOK_SECRET!;
 
-    console.log("Instagram Callback: Using redirect_uri for exchange:", redirectUri);
 
     try {
         // 1. Exchange the code for a short-lived access token

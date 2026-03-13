@@ -48,7 +48,6 @@ if (!globalForWorker.tiktokWorker && redisUrl) {
                     },
                 });
 
-                console.log(`✅ Job ${job.id}: TikTok post ${postId} published successfully! share_id=${shareId}`);
             } catch (error: unknown) {
                 const message = error instanceof Error ? error.message : "Unknown error";
 

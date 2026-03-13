@@ -40,7 +40,6 @@ export async function GET(req: NextRequest) {
     });
 
     const authUrl = `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`;
-    console.log("🔍 TikTok Auth URL:", authUrl);
 
     return NextResponse.redirect(authUrl);
 }

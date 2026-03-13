@@ -48,7 +48,6 @@ if (!globalForWorker.videoWorker && redisUrl) {
                     },
                 });
 
-                console.log(`✅ Job ${job.id}: Video ${videoId} uploaded successfully!`);
             } catch (error: any) {
                 // Mark as failed with error message
                 await prisma.youtubePost.update({

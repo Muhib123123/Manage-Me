@@ -70,7 +70,6 @@ export async function POST(req: NextRequest) {
             { videoId: video.id },
             { delay }
         );
-        console.log(`✅ Queued video ${video.id} to upload in ${Math.round(delay / 1000)}s`);
     } catch (queueErr) {
         console.error("Failed to enqueue video upload:", queueErr);
         // We still return 201 because the video was saved, but the scheduling failed
