@@ -30,6 +30,8 @@ export async function GET() {
     authUrl.searchParams.append("redirect_uri", redirectUri);
     authUrl.searchParams.append("response_type", "code");
     authUrl.searchParams.append("scope", scopes);
+    authUrl.searchParams.append("enable_fb_login", "0");
+    authUrl.searchParams.append("force_authentication", "1");
 
     return NextResponse.redirect(authUrl.toString());
 }

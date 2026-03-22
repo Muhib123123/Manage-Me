@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { X, Zap } from "lucide-react";
 import { useUpload } from "@/contexts/UploadContext";
 import { useConfirm } from "@/components/ConfirmDialog";
 import type { ReactNode } from "react";
@@ -92,13 +92,14 @@ const navUpload: NavItem[] = [
 
 /* ─── Component ───────────────────────────────────── */
 
-interface SidebarProps { onClose?: () => void; connections?: string[]; }
+interface SidebarProps { onClose?: () => void; connections?: string[]; plan?: string; }
 
-export default function Sidebar({ onClose, connections = [] }: SidebarProps) {
+export default function Sidebar({ onClose, connections = [], plan = "FREE" }: SidebarProps) {
     const path = usePathname();
     const router = useRouter();
     const { isUploading } = useUpload();
     const confirm = useConfirm();
+    const isFree = plan === "FREE";
 
     const handleNavClick = async (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
         if (!isUploading) {
@@ -222,6 +223,25 @@ export default function Sidebar({ onClose, connections = [] }: SidebarProps) {
                     return renderLink(item);
                 })}
             </nav>
+
+            {/* Upgrade CTA — Free plan only */}
+            {isFree && (
+                <div className="mx-3 mb-3">
+                    <Link
+                        href="/pricing"
+                        className="
+                            flex items-center gap-2 px-3 py-2.5 rounded-lg no-underline
+                            bg-[var(--accent)]/8 border border-[var(--accent)]/20
+                            text-[var(--accent)] text-xs font-semibold
+                            hover:bg-[var(--accent)]/15 hover:border-[var(--accent)]/40
+                        "
+                    >
+                        <Zap size={13} className="shrink-0" />
+                        <span>Upgrade to Creator</span>
+                        <span className="ml-auto text-[10px] opacity-70">→</span>
+                    </Link>
+                </div>
+            )}
 
             {/* Footer */}
             <div className="px-5 py-4 border-t border-[var(--border-solid)]">

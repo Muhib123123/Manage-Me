@@ -2,17 +2,21 @@ import { prisma } from "./prisma";
 
 // Helper to handle standard API responses/errors
 async function fetchGraphApi(endpoint: string, options: RequestInit = {}) {
-    // For the direct Instagram Login flow, we use the graph.instagram.com endpoint
-    const baseUrl = "https://graph.instagram.com/v19.0";
-    const response = await fetch(`${baseUrl}/${endpoint}`, options);
+    // Use latest stable Graph API version
+    const baseUrl = "https://graph.instagram.com/v22.0";
+    const url = `${baseUrl}/${endpoint}`;
+    console.log("[Instagram API] →", options.method || "GET", url.replace(/access_token=[^&]+/, "access_token=REDACTED"));
+    const response = await fetch(url, options);
     const data = await response.json();
 
     if (data.error) {
+        console.error("[Instagram API] ✗ Error:", JSON.stringify(data.error));
         throw new Error(data.error.message || "Unknown Instagram Graph API error");
     }
 
     return data;
 }
+
 
 // After publishing, fetch the post permalink and extract the shortcode from the URL.
 // Instagram web URLs look like: https://www.instagram.com/p/{shortcode}/
@@ -54,7 +58,9 @@ export async function uploadInstagramPhoto(
         throw new Error("Instagram is not connected or missing credentials.");
     }
 
-    const { platformId: instagramAccountId, accessToken } = connection;
+    const { platformId: instagramAccountId, accessToken: rawToken } = connection;
+    const accessToken = rawToken.trim();
+    console.log("[IG Photo] accountId:", instagramAccountId, "tokenLen:", accessToken.length, "prefix:", accessToken.slice(0, 10));
 
     try {
         if (mediaUrls.length === 1) {
@@ -143,7 +149,9 @@ export async function uploadInstagramVideo(
         throw new Error("Instagram is not connected or missing credentials.");
     }
 
-    const { platformId: instagramAccountId, accessToken } = connection;
+    const { platformId: instagramAccountId, accessToken: rawToken } = connection;
+    const accessToken = rawToken.trim();
+    console.log("[IG Video] accountId:", instagramAccountId, "tokenLen:", accessToken.length, "prefix:", accessToken.slice(0, 10));
 
     try {
         const videoUrl = mediaUrls[0];

@@ -67,10 +67,19 @@ if (!globalForWorker.instagramWorker && redisUrl) {
                 });
 
             } catch (error: any) {
-                // Mark as failed with error message
+                // Detect expired / revoked token errors and surface a friendly message
+                const rawMsg: string = error.message || "Unknown error occurred";
+                const isTokenError =
+                    rawMsg.toLowerCase().includes("invalid oauth") ||
+                    rawMsg.toLowerCase().includes("cannot parse access token") ||
+                    rawMsg.toLowerCase().includes("token") && rawMsg.toLowerCase().includes("invalid");
+                const friendlyMsg = isTokenError
+                    ? "Your Instagram access has expired or been revoked. Please reconnect your Instagram account on the Connections page."
+                    : rawMsg;
+
                 await prisma.instagramPost.update({
                     where: { id: postId },
-                    data: { status: "FAILED", errorMessage: error.message || "Unknown error occurred" },
+                    data: { status: "FAILED", errorMessage: friendlyMsg },
                 });
                 console.error(`❌ Job ${job.id}: Instagram post ${postId} upload failed:`, error);
                 throw error; // Re-throw so BullMQ marks job as failed

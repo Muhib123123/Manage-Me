@@ -61,6 +61,11 @@ model User {
   emailVerified DateTime?
   image         String?
 
+  // Subscription plan: "FREE" | "CREATOR"
+  plan             String    @default("FREE")
+  planActivatedAt  DateTime? // when paid plan started
+  planExpiresAt    DateTime? // when paid plan expires (future Stripe use)
+
   accounts             Account[]
   sessions             Session[]
   youtubePosts         YoutubePost[]

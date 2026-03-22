@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { ConnectButton } from "./ConnectButton";
+import Link from "next/link";
 
 export default async function HubPage({ searchParams }: { searchParams: Promise<{ error?: string, success?: string }> }) {
     const session = await auth();
@@ -9,9 +10,12 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
 
     const params = await searchParams;
 
-    const connections = await prisma.platformConnection.findMany({
-        where: { userId: session.user.id },
-    });
+    const [connections, userRecord] = await Promise.all([
+        prisma.platformConnection.findMany({ where: { userId: session.user.id } }),
+        prisma.user.findUnique({ where: { id: session.user.id }, select: { plan: true } })
+    ]);
+
+    const isFree = (userRecord?.plan ?? "FREE") === "FREE";
 
     const hasYoutube = connections.some(c => c.platform === "YOUTUBE");
     const ytConnection = connections.find(c => c.platform === "YOUTUBE");
@@ -21,6 +25,9 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
 
     const hasTiktok = connections.some(c => c.platform === "TIKTOK");
     const ttConnection = connections.find(c => c.platform === "TIKTOK");
+
+    // Removed LockedSwitchButton as Free tier can now switch accounts
+
 
     return (
         <div className="p-6 md:p-10 max-w-7xl mx-auto">
@@ -43,6 +50,20 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                 <div className="mb-8 px-5 py-4 rounded-xl bg-[var(--surface-2)] text-[var(--text)] text-sm font-medium border border-[var(--border-solid)] flex items-center gap-3">
                     <span className="text-lg text-emerald-500">✅</span>
                     Successfully connected {params.success}!
+                </div>
+            )}
+
+            {/* Free plan notice about monthly limit */}
+            {isFree && (
+                <div className="mb-8 px-5 py-3.5 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent)]/6 flex items-center gap-3">
+                    <span className="text-[var(--accent)] text-base">⚡</span>
+                    <p className="text-xs text-[var(--muted)]">
+                        Free plan · Maximum 15 posts per month across all accounts (including switched accounts).{" "}
+                        <Link href="/pricing" className="text-[var(--accent)] font-semibold no-underline hover:underline">
+                            Upgrade to Creator
+                        </Link>{" "}
+                        for unlimited posting.
+                    </p>
                 </div>
             )}
 
@@ -80,7 +101,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                             </div>
                             <ConnectButton
                                 href="/api/youtube/connect"
-                                className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors inline-flex justify-center py-2"
+                                className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] inline-flex justify-center py-2"
                             >
                                 Switch Channel
                             </ConnectButton>
@@ -89,7 +110,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                         <div>
                             <ConnectButton
                                 href="/api/youtube/connect"
-                                className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-300 text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium"
+                                className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium"
                             >
                                 Connect YouTube
                             </ConnectButton>
@@ -101,10 +122,10 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                 <div className="flex flex-col border-t border-[var(--border-solid)] pt-6 gap-6">
                     <div className="flex items-start justify-between">
                         <div>
-                            <h2 className="text-xl md:text-2xl font-bold tracking-tight text-[var(--text)] mb-1.5 ">
+                            <h2 className="text-xl md:text-2xl font-bold tracking-tight text-[var(--text)] mb-1.5">
                                 Instagram
                             </h2>
-                            <p className="text-xs text-[var(--muted)] uppercase tracking-wide font-semibold ">
+                            <p className="text-xs text-[var(--muted)] uppercase tracking-wide font-semibold">
                                 {hasInstagram ? <span className="text-emerald-500">Connected</span> : <span className="text-[var(--muted)]">Not Connected</span>}
                             </p>
                         </div>
@@ -129,7 +150,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                             </div>
                             <ConnectButton
                                 href="/api/instagram/connect"
-                                className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors inline-flex justify-center py-2"
+                                className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] inline-flex justify-center py-2"
                             >
                                 Switch Account
                             </ConnectButton>
@@ -138,7 +159,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                         <div>
                             <ConnectButton
                                 href="/api/instagram/connect"
-                                className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-300 text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium cursor-pointer"
+                                className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium cursor-pointer"
                             >
                                 Connect Instagram
                             </ConnectButton>
@@ -178,7 +199,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                             </div>
                             <ConnectButton
                                 href="/api/tiktok/connect"
-                                className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors inline-flex justify-center py-2"
+                                className="text-sm font-medium text-[var(--muted)] hover:text-[var(--text)] inline-flex justify-center py-2"
                             >
                                 Switch Account
                             </ConnectButton>
@@ -187,7 +208,7 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                         <div>
                             <ConnectButton
                                 href="/api/tiktok/connect"
-                                className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] transition-colors duration-300 text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium cursor-pointer"
+                                className="inline-flex w-full items-center justify-center border border-[var(--border-solid)] hover:border-[var(--text)] hover:bg-[var(--surface-2)] text-[var(--text)] px-6 py-3.5 rounded-lg text-sm font-medium cursor-pointer"
                             >
                                 Connect TikTok
                             </ConnectButton>

@@ -261,7 +261,8 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
     const [scheduledDate, setScheduledDate] = useState("");
     const [scheduledTime, setScheduledTime] = useState("");
     const [submitStatus, setSubmitStatus] = useState<UploadStatus>("idle");
-    const [error, setError] = useState("");
+    const [error, setError] = useState("");         // form/submit errors → near submit button
+    const [videoError, setVideoError] = useState(""); // video-specific errors → inside upload media section
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -294,6 +295,7 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        setVideoError("");
         if (!activeVideoUrl) { setError("Please upload a video file."); return; }
         if (!title.trim()) { setError("Please enter a video title."); return; }
         if (!scheduledDate || !scheduledTime) { setError("Please set a scheduled date and time."); return; }
@@ -315,6 +317,13 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                     scheduledAt,
                 }),
             });
+            if (res.status === 403) {
+                const data = await res.json();
+                if (data.upgradeRequired) {
+                    router.push("/pricing?reason=limit");
+                    return;
+                }
+            }
             if (!res.ok) throw new Error("Failed to save video");
             setSubmitStatus("done");
             setTimeout(() => router.push("/youtube-dashboard"), 1500);
@@ -322,6 +331,7 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
             setSubmitStatus("error");
             setError(err instanceof Error ? err.message : "Something went wrong.");
         }
+
     };
 
     return (
@@ -463,18 +473,18 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                                                     const { width, height } = await getVideoDimensions(f);
                                                     
                                                     if (height > width) {
-                                                        setError("Normal videos must be horizontal.");
+                                                        setVideoError("Normal videos must be horizontal. Please upload a landscape video.");
                                                         return [];
                                                     }
                                                     
-                                                    setError("");
+                                                    setVideoError("");
                                                     setNormalVideoFileSize(f.size);
                                                     setNormalVideoFileName(f.name);
                                                     setNormalVideoUploading(true);
                                                     setNormalVideoProgress(0);
                                                     setIsUploading(true);
                                                 } catch {
-                                                    setError("Could not read video dimensions.");
+                                                    setVideoError("Could not read video dimensions.");
                                                     return [];
                                                 }
                                             }
@@ -527,18 +537,18 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                                                     const { width, height } = await getVideoDimensions(f);
                                                     
                                                     if (width > height) {
-                                                        setError("YouTube Shorts must be vertical.");
+                                                        setVideoError("YouTube Shorts must be vertical. Please upload a portrait video.");
                                                         return [];
                                                     }
                                                     
-                                                    setError("");
+                                                    setVideoError("");
                                                     setShortVideoFileSize(f.size);
                                                     setShortVideoFileName(f.name);
                                                     setShortVideoUploading(true);
                                                     setShortVideoProgress(0);
                                                     setIsUploading(true);
                                                 } catch {
-                                                    setError("Could not read video dimensions.");
+                                                    setVideoError("Could not read video dimensions.");
                                                     return [];
                                                 }
                                             }
@@ -622,10 +632,10 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
 
                     </div>
                     
-                    {/* ── Error banner ───────────────────────── */}
-                    {error && (
-                        <div className="px-5 py-4 mt-6 rounded-xl bg-red-50 text-red-700 text-sm font-medium border border-red-100 flex items-center gap-3">
-                            <span className="text-lg">⚠</span> {error}
+                    {/* ── Video-specific error (orientation / dimensions) ── */}
+                    {videoError && (
+                        <div className="px-5 py-4 mt-6 rounded-xl bg-red-50 text-red-700 text-sm font-medium border border-red-100 flex items-center gap-3 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
+                            <span className="text-lg shrink-0">⚠</span> {videoError}
                         </div>
                     )}
                 </FormCard>
@@ -729,6 +739,13 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                         </p>
                     </div>
                 </FormCard>
+
+                {/* ── Form / submit errors ────────────── */}
+                {error && (
+                    <div className="px-5 py-4 rounded-xl bg-red-50 text-red-700 text-sm font-medium border border-red-100 flex items-center gap-3 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
+                        <span className="text-lg shrink-0">⚠</span> {error}
+                    </div>
+                )}
 
                 {/* ── Success banner ─────────────────────── */}
                 {submitStatus === "done" && (

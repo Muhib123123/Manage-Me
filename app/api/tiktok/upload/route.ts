@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { tiktokQueue } from "@/lib/queue-tiktok";
 import "@/lib/queue-tiktok"; // ensure worker is registered
+import { canSchedulePost } from "@/lib/subscription";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
@@ -35,7 +36,16 @@ export async function POST(req: Request) {
         const scheduledTime = new Date(scheduledAt);
         const delay = Math.max(0, scheduledTime.getTime() - Date.now());
 
-        // Save post to Database
+        // Plan enforcement
+        const enforcement = await canSchedulePost(session.user.id, "TIKTOK", scheduledTime);
+        if (!enforcement.ok) {
+            return NextResponse.json(
+                { error: enforcement.reason, code: enforcement.code, upgradeRequired: true },
+                { status: 403 }
+            );
+        }
+
+
         const post = await prisma.tiktokPost.create({
             data: {
                 userId: session.user.id,

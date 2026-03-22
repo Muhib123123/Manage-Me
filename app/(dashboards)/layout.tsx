@@ -11,10 +11,22 @@ export default async function DashboardLayout({
     const session = await auth();
     if (!session) redirect("/login");
 
-    const connections = await prisma.platformConnection.findMany({
-        where: { userId: session.user.id }
-    });
-    const connectedPlatforms = connections.map(c => c.platform);
+    const [connections, user] = await Promise.all([
+        prisma.platformConnection.findMany({
+            where: { userId: session.user.id }
+        }),
+        prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { plan: true }
+        })
+    ]);
 
-    return <DashboardShell user={session.user} connections={connectedPlatforms}>{children}</DashboardShell>;
+    const connectedPlatforms = connections.map(c => c.platform);
+    const plan = user?.plan ?? "FREE";
+
+    return (
+        <DashboardShell user={session.user} connections={connectedPlatforms} plan={plan}>
+            {children}
+        </DashboardShell>
+    );
 }

@@ -277,10 +277,18 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                     scheduledAt,
                 }),
             });
+            if (res.status === 403) {
+                const data = await res.json().catch(() => ({}));
+                if (data.upgradeRequired) {
+                    router.push("/pricing?reason=limit");
+                    return;
+                }
+            }
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({ error: "Unknown server error" }));
                 throw new Error(errData.error || "Failed to schedule post");
             }
+
             setSubmitStatus("done");
             setTimeout(() => router.push("/instagram-dashboard"), 1500);
         } catch (err: unknown) {

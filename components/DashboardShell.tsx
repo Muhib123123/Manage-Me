@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
 interface Props {
     user: { name?: string | null; email?: string | null; image?: string | null };
     connections: string[];
+    plan: string;
     children: React.ReactNode;
 }
 
-export default function DashboardShell({ user, connections, children }: Props) {
+export default function DashboardShell({ user, connections, plan, children }: Props) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
@@ -27,16 +28,15 @@ export default function DashboardShell({ user, connections, children }: Props) {
             <div
                 className={`
                     fixed inset-y-0 left-0 z-50 transform lg:static lg:translate-x-0 lg:z-auto lg:shrink-0
-                    transition-transform duration-300 ease-in-out
                     ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
                 `}
             >
-                <Sidebar onClose={() => setSidebarOpen(false)} connections={connections} />
+                <Sidebar onClose={() => setSidebarOpen(false)} connections={connections} plan={plan} />
             </div>
 
             {/* Main area */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <Topbar user={user} onMenuClick={() => setSidebarOpen((o) => !o)} />
+                <Topbar user={user} plan={plan} onMenuClick={() => setSidebarOpen((o) => !o)} />
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                     {children}
                 </main>

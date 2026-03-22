@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { canSchedulePost } from "@/lib/subscription";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET /api/videos — fetch all videos for the logged-in user
@@ -40,6 +41,15 @@ export async function POST(req: NextRequest) {
         );
     }
 
+    // Plan enforcement
+    const enforcement = await canSchedulePost(session.user.id, "YOUTUBE", new Date(scheduledAt));
+    if (!enforcement.ok) {
+        return NextResponse.json(
+            { error: enforcement.reason, code: enforcement.code, upgradeRequired: true },
+            { status: 403 }
+        );
+    }
+
     const video = await prisma.youtubePost.create({
         data: {
             userId: session.user.id,
@@ -54,7 +64,6 @@ export async function POST(req: NextRequest) {
             status: "PENDING",
         },
     });
-
 
     // Phase 4: Enqueue BullMQ job with delay
     try {

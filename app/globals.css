@@ -80,7 +80,6 @@ html {
 /* Force smooth color transitions for dark mode toggles over Tailwind utility classes */
 html,
 body,
-div,
 p,
 span,
 h1,
@@ -100,16 +99,21 @@ ul,
 li,
 label,
 svg,
-path,
-aside {
+aside,
+div,
+path {
   transition:
     background-color 250ms ease-in-out,
     border-color 250ms ease-in-out,
     fill 250ms ease-in-out,
     stroke 250ms ease-in-out,
     transform 250ms ease-in-out,
+    translate 250ms ease-in-out,
+    rotate 250ms ease-in-out,
+    scale 250ms ease-in-out,
     color 100ms ease-in-out !important;
 }
+
 
 body {
   background-color: var(--bg);
