@@ -245,23 +245,23 @@ export default function Sidebar({ onClose, connections = [], plan = "FREE" }: Si
 
             {/* Footer */}
             <div className="px-5 py-6 border-t border-[var(--border-solid)] flex flex-col gap-3">
-                <p className="text-[20px] text-[var(--muted)] font-medium lg:text-[25px]">Manage Me · Social Scheduler</p>
                 <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                     <Link 
                         href="/privacy" 
                         onClick={(e) => handleNavClick(e, "/privacy")}
-                        className="text-[15px] text-[var(--muted)] hover:text-[var(--text)] transition-colors no-underline lg:text-[25px]"
+                        className="text-[15px] text-[var(--muted)] hover:text-[var(--text)] transition-colors no-underline"
                     >
                         Privacy Policy
                     </Link>
                     <Link 
                         href="/terms" 
                         onClick={(e) => handleNavClick(e, "/terms")}
-                        className="text-[15px] text-[var(--muted)] hover:text-[var(--text)] transition-colors no-underline lg:text-[25px]"
+                        className="text-[15px] text-[var(--muted)] hover:text-[var(--text)] transition-colors no-underline"
                     >
                         Terms of Service
                     </Link>
                 </div>
+                <p className="text-[10px] text-[var(--muted)] font-medium">Manage Me · Social Scheduler</p>                
             </div>
         </aside>
     );
