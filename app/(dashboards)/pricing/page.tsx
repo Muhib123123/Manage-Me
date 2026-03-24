@@ -1,3 +1,6 @@
+import { Metadata } from "next";
+export const metadata: Metadata = { title: "Upgrade to Creator" };
+
 import { auth } from "@/lib/auth";
 import { getUserPlan } from "@/lib/subscription";
 import { redirect } from "next/navigation";

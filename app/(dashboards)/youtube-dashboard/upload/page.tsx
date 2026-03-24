@@ -1,3 +1,6 @@
+import { Metadata } from "next";
+export const metadata: Metadata = { title: "Upload to YouTube" };
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { checkLongUploadStatus } from "@/lib/youtube";

@@ -1,5 +1,8 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { Metadata } from "next";
+export const metadata: Metadata = { title: "Manage Connections" };
+
 import { redirect } from "next/navigation";
 import { ConnectButton } from "./ConnectButton";
 import Link from "next/link";

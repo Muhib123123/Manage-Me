@@ -1,3 +1,6 @@
+import { Metadata } from "next";
+export const metadata: Metadata = { title: "YouTube Dashboard" };
+
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";

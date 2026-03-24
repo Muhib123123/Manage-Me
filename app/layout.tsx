@@ -15,9 +15,15 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Manage Me — Social Media Scheduler",
+  title: {
+    template: "%s | Manage Me",
+    default: "Manage Me — Multi-Platform Social Scheduler",
+  },
   description:
-    "Schedule and automatically publish your videos and photos at the perfect time.",
+    "Schedule and automatically publish your videos, shorts, reels, and photos to YouTube, Instagram, and TikTok at the perfect time. A centralized analytics and uploading hub for creators.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({
