@@ -11,6 +11,7 @@ interface ConfirmOptions {
     confirmLabel?: string;
     cancelLabel?: string;
     variant?: "danger" | "warning" | "info";
+    requiredInput?: string;
 }
 
 interface ConfirmContextValue {
@@ -30,15 +31,22 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         resolve: (value: boolean) => void;
     } | null>(null);
 
+    const [userInput, setUserInput] = useState("");
+
     const confirm = useCallback((options: ConfirmOptions): Promise<boolean> => {
         return new Promise((resolve) => {
+            setUserInput(""); // Reset on each open
             setState({ open: true, options, resolve });
         });
     }, []);
 
     const handleChoice = (value: boolean) => {
+        if (value && state?.options.requiredInput && userInput !== state.options.requiredInput) {
+            return; // Prevent confirming if input doesn't match
+        }
         state?.resolve(value);
         setState(null);
+        setUserInput("");
     };
 
     const variantConfig = {
@@ -61,6 +69,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 
     const v = state?.options.variant ?? "warning";
     const config = variantConfig[v];
+
+    const isConfirmDisabled = state?.options.requiredInput ? userInput !== state.options.requiredInput : false;
 
     return (
         <ConfirmContext.Provider value={{ confirm }}>
@@ -89,13 +99,29 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                                 <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${config.iconBg}`}>
                                     {config.icon}
                                 </div>
-                                <div className="pt-1">
+                                <div className="pt-1 flex-1">
                                     <h3 className="text-[17px] sm:text-lg font-semibold text-[var(--text)] leading-tight tracking-tight">
                                         {state.options.title}
                                     </h3>
                                     <p className="mt-2 text-[14px] text-[var(--muted)] leading-relaxed">
                                         {state.options.message}
                                     </p>
+
+                                    {state.options.requiredInput && (
+                                        <div className="mt-5">
+                                            <label className="text-[11px] font-bold uppercase tracking-wider text-[var(--muted)] mb-1.5 block">
+                                                Type <span className="text-[var(--text)]">"{state.options.requiredInput}"</span> to confirm
+                                            </label>
+                                            <input 
+                                                autoFocus
+                                                type="text"
+                                                value={userInput}
+                                                onChange={(e) => setUserInput(e.target.value)}
+                                                placeholder={state.options.requiredInput}
+                                                className="w-full h-10 px-3 py-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-solid)] text-sm text-[var(--text)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] transition-all"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -109,8 +135,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                                 {state.options.cancelLabel ?? "No, stay here"}
                             </button>
                             <button
+                                disabled={isConfirmDisabled}
                                 onClick={() => handleChoice(true)}
-                                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-[14px] font-semibold cursor-pointer ${config.confirmBtn}`}
+                                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-[14px] font-semibold cursor-pointer transition-all ${config.confirmBtn} ${isConfirmDisabled ? "opacity-50 grayscale cursor-not-allowed scale-[0.98]" : "scale-100"}`}
                             >
                                 {state.options.confirmLabel ?? "Yes, proceed"}
                             </button>
