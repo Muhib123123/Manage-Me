@@ -72,6 +72,8 @@ model User {
   instagramPosts       InstagramPost[]
   tiktokPosts          TiktokPost[]
   platformConnections  PlatformConnection[]
+  analyticsSnapshots   AnalyticsSnapshot[]
+  liveViews            LiveView[]
 
   createdAt DateTime @default(now())
 }
@@ -198,4 +200,48 @@ model TiktokPost {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Analytics Snapshot model
+// ─────────────────────────────────────────────
+
+model AnalyticsSnapshot {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  platform String // "YOUTUBE" | "INSTAGRAM" | "TIKTOK"
+
+  // Core counts (nullable — not every platform exposes everything)
+  subscribers Int? // YouTube subscribers / Instagram followers / TikTok followers
+  followers   Int? // alias used for IG/TikTok — kept separate for clarity
+  views       Int? // total profile/channel views at snapshot time
+  videoViews  Int? // cumulative video views (YouTube, TikTok)
+  likes       Int? // cumulative likes (TikTok)
+
+  // Audience gender breakdown (percentages 0–100, may be null if not available)
+  malePercent   Float?
+  femalePercent Float?
+  otherPercent  Float?
+
+  snapshotAt DateTime @default(now())
+
+  @@index([userId, platform, snapshotAt])
+}
+
+// ─────────────────────────────────────────────
+// Live View model (for SSE live counter)
+// ─────────────────────────────────────────────
+
+model LiveView {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  platform  String // "YOUTUBE" | "INSTAGRAM" | "TIKTOK"
+  count     Int    @default(0) // current live viewer / concurrent viewer count
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, platform])
 }

@@ -54,7 +54,7 @@ export default function LoginPage() {
 
                 {/* Feature pills (Restrained) */}
                 <div className="flex gap-2 justify-center flex-wrap mt-10">
-                    {["YouTube", "Instagram", "Scheduled"].map((f) => (
+                    {["YouTube", "Instagram", "TikTok"].map((f) => (
                         <span
                             key={f}
                             className="px-3 py-1 rounded-full bg-[var(--bg)] border border-[var(--border)] text-[11px] uppercase tracking-wider text-[var(--muted)] font-medium"

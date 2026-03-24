@@ -26,7 +26,8 @@ export async function GET(req: NextRequest) {
         prompt: "consent select_account", // Force consent screen and account selection
         scope: [
             "https://www.googleapis.com/auth/youtube.upload",
-            "https://www.googleapis.com/auth/youtube.readonly"
+            "https://www.googleapis.com/auth/youtube.readonly",
+            "https://www.googleapis.com/auth/yt-analytics.readonly"
         ],
         state,
     });

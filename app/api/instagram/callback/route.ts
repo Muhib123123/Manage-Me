@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { scheduleAnalyticsSync } from "@/lib/analytics/queue";
 
 export async function GET(req: Request) {
     const session = await auth();
@@ -113,6 +114,9 @@ export async function GET(req: Request) {
                 platformAvatar: instagramAvatar
             },
         });
+
+        // Schedule recurring analytics snapshots for this user
+        await scheduleAnalyticsSync(session.user.id, "INSTAGRAM").catch(console.error);
 
         return NextResponse.redirect(new URL("/instagram-dashboard?success=Instagram", baseUrl));
 

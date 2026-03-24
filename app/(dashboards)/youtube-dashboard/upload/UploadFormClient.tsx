@@ -322,9 +322,15 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                 if (data.upgradeRequired) {
                     router.push("/pricing?reason=limit");
                     return;
+                } else if (data.code === "DAILY_LIMIT") {
+                    throw new Error("Sorry, you can't schedule two YouTube videos on the same day. Please change the scheduled date to a different day.");
                 }
+                throw new Error(data.error || "Failed to save video");
             }
-            if (!res.ok) throw new Error("Failed to save video");
+            if (!res.ok) {
+                const data = await res.json().catch(() => null);
+                throw new Error(data?.error || "Failed to save video");
+            }
             setSubmitStatus("done");
             setTimeout(() => router.push("/youtube-dashboard"), 1500);
         } catch (err: unknown) {
@@ -367,6 +373,7 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                                 onClick={() => {
                                     setVideoType(value);
                                     setError("");
+                                    setVideoError("");
                                 }}
                                 className={[
                                     "flex flex-col gap-1.5 p-5 rounded-xl text-left  border cursor-pointer group",
@@ -742,7 +749,11 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
 
                 {/* ── Form / submit errors ────────────── */}
                 {error && (
-                    <div className="px-5 py-4 rounded-xl bg-red-50 text-red-700 text-sm font-medium border border-red-100 flex items-center gap-3 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
+                    <div className={`px-5 py-4 rounded-xl text-sm font-medium border flex items-center gap-3 ${
+                        error.includes("same day")
+                            ? "bg-yellow-50 text-yellow-800 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800/50 dark:text-yellow-400"
+                            : "bg-red-50 text-red-700 border-red-100 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400"
+                    }`}>
                         <span className="text-lg shrink-0">⚠</span> {error}
                     </div>
                 )}

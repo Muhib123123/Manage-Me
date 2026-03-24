@@ -45,7 +45,11 @@ export async function POST(req: NextRequest) {
     const enforcement = await canSchedulePost(session.user.id, "YOUTUBE", new Date(scheduledAt));
     if (!enforcement.ok) {
         return NextResponse.json(
-            { error: enforcement.reason, code: enforcement.code, upgradeRequired: true },
+            { 
+                error: enforcement.reason, 
+                code: enforcement.code, 
+                upgradeRequired: enforcement.code !== "DAILY_LIMIT" 
+            },
             { status: 403 }
         );
     }

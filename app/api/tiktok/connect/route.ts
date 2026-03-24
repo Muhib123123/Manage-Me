@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     const params = new URLSearchParams({
         client_key: TIKTOK_CLIENT_KEY,
         response_type: "code",
-        scope: "user.info.basic,video.publish",
+        scope: "user.info.basic,user.info.stats,video.publish",
         redirect_uri: REDIRECT_URI,
         state,
         code_challenge: codeChallenge,

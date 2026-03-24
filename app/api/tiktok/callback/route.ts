@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { scheduleAnalyticsSync } from "@/lib/analytics/queue";
 
 const TIKTOK_CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY!;
 const TIKTOK_CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET!;
@@ -109,6 +110,9 @@ export async function GET(req: NextRequest) {
                 platformAvatar,
             },
         });
+
+        // Schedule recurring analytics snapshots for this user
+        await scheduleAnalyticsSync(userId, "TIKTOK").catch(console.error);
 
         return NextResponse.redirect(new URL("/tiktok-dashboard?success=TikTok", APP_BASE));
     } catch (err: unknown) {

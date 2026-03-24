@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { scheduleAnalyticsSync } from "@/lib/analytics/queue";
 
 const APP_BASE = (process.env.NEXTAUTH_URL || "http://localhost:3000").trim().replace(/\/$/, "");
 
@@ -89,6 +90,9 @@ export async function GET(req: NextRequest) {
                 platformAvatar,
             },
         });
+
+        // Schedule recurring analytics snapshots for this user
+        await scheduleAnalyticsSync(session.user.id, "YOUTUBE").catch(console.error);
 
         // Redirect back to the connections hub
         return NextResponse.redirect(new URL("/youtube-dashboard?success=youtube", APP_BASE));

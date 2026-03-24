@@ -5,6 +5,7 @@ import Link from "next/link";
 import { VideoRow } from "@/components/VideoRow";
 import { UnifiedPost } from "@/types";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 
 export default async function TikTokDashboardPage({
     searchParams,
@@ -63,22 +64,22 @@ export default async function TikTokDashboardPage({
                 </div>
             )}
             {/* ── Page Header ───────────────────────────── */}
-            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-10">
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-12">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight mb-2">
-                        TikTok Schedule
+                    <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[var(--text)] mb-3">
+                        TikTok Studio
                     </h1>
-                    <p className="text-[var(--muted)] text-sm sm:text-base max-w-lg leading-relaxed">
-                        Manage your scheduled and published TikTok videos.
+                    <p className="text-[var(--muted)] text-base max-w-lg leading-relaxed">
+                        Manage your scheduled and published TikTok videos, track analytics, and monitor performance.
                     </p>
                 </div>
-                <Link href="/tiktok-dashboard/upload" className="w-full sm:w-auto px-5 py-2.5 bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-medium text-sm rounded-xl shadow-sm dark:shadow-none text-center flex items-center justify-center cursor-pointer">
-                    Schedule New Video +
+                <Link href="/tiktok-dashboard/upload" className="w-full sm:w-auto px-6 py-3 uppercase tracking-wider bg-[var(--text)] hover:bg-[var(--text)]/90 text-[var(--surface)] font-bold text-xs rounded-full transition-all shadow-md hover:shadow-lg dark:shadow-none text-center flex items-center justify-center cursor-pointer">
+                    Schedule New Video <span className="ml-2 text-lg leading-none">+</span>
                 </Link>
             </div>
 
             {/* ── Stats bar ─────────────────────────────── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-16">
                 <StatCard label="Scheduled" value={pending.length} color="blue" />
                 <StatCard label="Published" value={published.length} color="green" />
                 <StatCard label="Failed" value={failed.length} color="red" />
@@ -94,7 +95,7 @@ export default async function TikTokDashboardPage({
                         href="/tiktok-dashboard/upload"
                     />
                 ) : (
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
                         {pending.map((p) => <VideoRow key={p.id} post={p} />)}
                     </div>
                 )}
@@ -103,7 +104,7 @@ export default async function TikTokDashboardPage({
             {/* ── Failed Section ─────────────────────────── */}
             {failed.length > 0 && (
                 <Section title="❌ Failed" count={failed.length} statusColor="red">
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
                         {failed.map((p) => <VideoRow key={p.id} post={p} showError />)}
                     </div>
                 </Section>
@@ -118,11 +119,14 @@ export default async function TikTokDashboardPage({
                         cta="They'll appear here after scheduled uploads complete."
                     />
                 ) : (
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
                         {published.map((p) => <VideoRow key={p.id} post={p} />)}
                     </div>
                 )}
             </Section>
+
+            {/* ── Analytics ─────────────────────────────── */}
+            <AnalyticsDashboard platform="TIKTOK" />
         </div>
     );
 }
@@ -130,16 +134,16 @@ export default async function TikTokDashboardPage({
 /* ── Sub-components ──────────────────────────────── */
 
 const STAT_COLORS: Record<string, string> = {
-    blue: "bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
-    green: "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
-    red: "bg-red-50 text-red-700 border-red-100 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+    blue: "bg-blue-50/50 text-blue-700 border-blue-100/60 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30",
+    green: "bg-emerald-50/50 text-emerald-700 border-emerald-100/60 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30",
+    red: "bg-red-50/50 text-red-700 border-red-100/60 dark:bg-red-950/20 dark:text-red-400 dark:border-red-900/30",
 };
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
     return (
-        <div className={`p-4 rounded-xl border ${STAT_COLORS[color]} flex items-center justify-between`}>
-            <span className="text-sm font-medium">{label}</span>
-            <span className="text-2xl font-bold">{value}</span>
+        <div className={`p-6 rounded-[24px] border shadow-sm ${STAT_COLORS[color]} flex flex-col gap-2 transition-all hover:shadow-md`}>
+            <span className="text-sm font-medium opacity-80">{label} Queue</span>
+            <span className="text-4xl font-semibold tracking-tight">{value}</span>
         </div>
     );
 }
@@ -160,9 +164,10 @@ function Section({
 }) {
     void count; void SECTION_BADGE; void statusColor;
     return (
-        <div className="mb-8">
-            <div className="flex items-center gap-2.5 mb-3">
-                <h2 className="text-sm font-semibold text-[var(--text)]">{title}</h2>
+        <div className="mb-12">
+            <div className="flex items-center gap-3 mb-6 px-1">
+                <div className="w-1.5 h-6 rounded-full bg-[var(--border-solid)] shadow-sm" />
+                <h2 className="text-xl font-bold tracking-tight text-[var(--text)]">{title}</h2>
             </div>
             {children}
         </div>
