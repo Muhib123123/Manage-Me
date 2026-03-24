@@ -6,6 +6,7 @@ import { VideoRow } from "@/components/VideoRow";
 import { UnifiedPost } from "@/types";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
+import { DashboardTabs } from "@/components/DashboardTabs";
 
 export default async function InstagramDashboardPage({
     searchParams,
@@ -78,55 +79,61 @@ export default async function InstagramDashboardPage({
                 </Link>
             </div>
 
-            {/* ── Stats bar ─────────────────────────────── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-16">
-                <StatCard label="Scheduled" value={pending.length} color="blue" />
-                <StatCard label="Published" value={published.length} color="green" />
-                <StatCard label="Failed" value={failed.length} color="red" />
-            </div>
+            <DashboardTabs
+                scheduleContent={
+                    <>
+                        {/* ── Stats bar ─────────────────────────────── */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-16">
+                            <StatCard label="Scheduled" value={pending.length} color="blue" />
+                            <StatCard label="Published" value={published.length} color="green" />
+                            <StatCard label="Failed" value={failed.length} color="red" />
+                        </div>
 
-            {/* ── Pending Section ───────────────────────── */}
-            <Section title="📅 Scheduled" count={pending.length} statusColor="amber">
-                {pending.length === 0 ? (
-                    <EmptyState
-                        icon="📅"
-                        message="No scheduled posts yet"
-                        cta="Schedule your post →"
-                        href="/instagram-dashboard/upload"
-                    />
-                ) : (
-                    <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                        {pending.map((p) => <VideoRow key={p.id} post={p} />)}
-                    </div>
-                )}
-            </Section>
+                        {/* ── Pending Section ───────────────────────── */}
+                        <Section title="📅 Scheduled">
+                            {pending.length === 0 ? (
+                                <EmptyState
+                                    icon="📅"
+                                    message="No scheduled posts yet"
+                                    cta="Schedule your post →"
+                                    href="/instagram-dashboard/upload"
+                                />
+                            ) : (
+                                <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                                    {pending.map((p) => <VideoRow key={p.id} post={p} />)}
+                                </div>
+                            )}
+                        </Section>
 
-            {/* ── Failed Section ─────────────────────────── */}
-            {failed.length > 0 && (
-                <Section title="❌ Failed" count={failed.length} statusColor="red">
-                    <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                        {failed.map((p) => <VideoRow key={p.id} post={p} showError />)}
-                    </div>
-                </Section>
-            )}
+                        {/* ── Failed Section ─────────────────────────── */}
+                        {failed.length > 0 && (
+                            <Section title="❌ Failed">
+                                <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+                                    {failed.map((p) => <VideoRow key={p.id} post={p} showError />)}
+                                </div>
+                            </Section>
+                        )}
 
-            {/* ── Published Section ──────────────────────── */}
-            <Section title="✅ Published" count={published.length} statusColor="green">
-                {published.length === 0 ? (
-                    <EmptyState
-                        icon="✅"
-                        message="No published posts yet"
-                        cta="They'll appear here after scheduled uploads complete."
-                    />
-                ) : (
-                    <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                        {published.map((p) => <VideoRow key={p.id} post={p} />)}
-                    </div>
-                )}
-            </Section>
-
-            {/* ── Analytics ─────────────────────────────── */}
-            <AnalyticsDashboard platform="INSTAGRAM" />
+                        {/* ── Published Section ──────────────────────── */}
+                        <Section title="✅ Published">
+                            {published.length === 0 ? (
+                                <EmptyState
+                                    icon="✅"
+                                    message="No published posts yet"
+                                    cta="They'll appear here after scheduled uploads complete."
+                                />
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {published.map((p) => <VideoRow key={p.id} post={p} />)}
+                                </div>
+                            )}
+                        </Section>
+                    </>
+                }
+                analyticsContent={
+                    <AnalyticsDashboard platform="INSTAGRAM" />
+                }
+            />
         </div>
     );
 }
@@ -148,18 +155,10 @@ function StatCard({ label, value, color }: { label: string; value: number; color
     );
 }
 
-const SECTION_BADGE: Record<string, string> = {
-    amber: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400",
-    green: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400",
-    red: "bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400",
-};
-
 function Section({
-    title, count, statusColor, children,
+    title, children,
 }: {
     title: string;
-    count: number;
-    statusColor: string;
     children: React.ReactNode;
 }) {
     return (

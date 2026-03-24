@@ -113,7 +113,7 @@ export default function PricingClient() {
                     router.push("/welcome-creator");
                 }, 1200);
             }
-        } catch (err) {
+        } catch {
             setPromoError("An error occurred. Please try again.");
         } finally {
             setPromoLoading(false);

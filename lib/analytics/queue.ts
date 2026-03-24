@@ -90,8 +90,6 @@ if (!globalForWorker.analyticsWorker && redisUrl) {
                 platform: AnalyticsPlatform;
             };
 
-            console.log(`📊 Analytics sync: ${platform} for user ${userId}`);
-
             let snapshotData: Record<string, number | null> = {};
 
             if (platform === "YOUTUBE") {
@@ -143,8 +141,6 @@ if (!globalForWorker.analyticsWorker && redisUrl) {
                 update: { count: liveCount as number },
                 create: { userId, platform, count: liveCount as number },
             });
-
-            console.log(`✅ Analytics snapshot saved: ${platform} for user ${userId}`);
         },
         { connection, concurrency: 3 }
     );

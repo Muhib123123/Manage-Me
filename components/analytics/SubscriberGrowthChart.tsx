@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { useInView } from "./useInView";
-import { UpgradeGate } from "./UpgradeGate";
 
 type Range = "1d" | "7d" | "30d" | "90d";
 

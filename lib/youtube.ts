@@ -1,7 +1,5 @@
 import { google } from "googleapis";
 import { prisma } from "./prisma";
-import https from "https";
-import http from "http";
 import { Readable } from "stream";
 
 /**
@@ -180,9 +178,9 @@ export async function uploadVideoToYouTube(videoId: string): Promise<string> {
             // Without this, the googleapis client may attempt a simple multipart upload
             // which YouTube cuts off for large files.
             onUploadProgress: (evt) => {
-                const pct = contentLength
-                    ? Math.round((evt.bytesRead / contentLength) * 100)
-                    : "?";
+                if (contentLength) {
+                    Math.round((evt.bytesRead / contentLength) * 100);
+                }
             },
             // Force resumable upload — googleapis auto-selects this for streams > 5MB
             // but we make it explicit here.

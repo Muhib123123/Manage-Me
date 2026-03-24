@@ -1,6 +1,5 @@
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { google } from "googleapis";
 
 const oauth2Client = new google.auth.OAuth2(
@@ -10,7 +9,7 @@ const oauth2Client = new google.auth.OAuth2(
     `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/youtube/callback`
 );
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     const session = await auth();
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

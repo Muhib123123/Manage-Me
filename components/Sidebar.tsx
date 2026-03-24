@@ -161,7 +161,7 @@ export default function Sidebar({ onClose, connections = [], plan = "FREE" }: Si
         <aside className="w-[220px] h-full min-h-screen bg-[var(--surface)] border-r border-[var(--border-solid)] flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-5 border-b border-[var(--border-solid)]">
-                <Link 
+                <Link
                     href="/"
                     onClick={(e) => handleNavClick(e, "/")}
                     className="flex items-center gap-2.5 h-10 cursor-pointer"

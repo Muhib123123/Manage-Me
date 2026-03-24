@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import "next-auth";
 
 // Extend the built-in NextAuth types to include user.id in the session
 declare module "next-auth" {

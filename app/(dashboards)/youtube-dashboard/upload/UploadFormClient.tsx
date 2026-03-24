@@ -44,7 +44,6 @@ function UploadedMediaCard({
     url,
     fileName,
     fileSize,
-    progress,
     previewFrame,
     onRemove,
     videoRef,
@@ -55,7 +54,6 @@ function UploadedMediaCard({
     url: string;
     fileName: string;
     fileSize: number;
-    progress: number;
     previewFrame?: string;
     onRemove: () => void;
     videoRef?: React.RefObject<HTMLVideoElement | null>;
@@ -454,7 +452,6 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                                         url={normalVideoUrl}
                                         fileName={normalVideoFileName}
                                         fileSize={normalVideoFileSize}
-                                        progress={normalVideoProgress}
                                         previewFrame={normalVideoPreviewFrame}
                                         videoRef={videoRef}
                                         onVideoLoaded={captureVideoFrame}
@@ -518,7 +515,6 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                                         url={shortVideoUrl}
                                         fileName={shortVideoFileName}
                                         fileSize={shortVideoFileSize}
-                                        progress={shortVideoProgress}
                                         previewFrame={shortVideoPreviewFrame}
                                         videoRef={videoRef}
                                         onVideoLoaded={captureVideoFrame}
@@ -588,7 +584,6 @@ export default function UploadForm({ channelName, isPhoneVerified = false }: { c
                                             url={thumbnailUrl}
                                             fileName={thumbnailFileName}
                                             fileSize={thumbnailFileSize}
-                                            progress={thumbnailProgress}
                                             onRemove={() => {
                                                 setThumbnailUrl(""); setThumbnailProgress(0);
                                                 setThumbnailFileSize(0); setThumbnailFileName("");

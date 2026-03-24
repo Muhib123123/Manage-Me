@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { randomBytes, createHash } from "crypto";
 
 const TIKTOK_CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY!;
@@ -14,7 +14,7 @@ function generateCodeChallenge(verifier: string): string {
     return createHash("sha256").update(verifier).digest("base64url");
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     const session = await auth();
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

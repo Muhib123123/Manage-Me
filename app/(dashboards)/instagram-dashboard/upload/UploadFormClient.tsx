@@ -27,7 +27,6 @@ function UploadedMediaCard({
     url,
     fileName,
     fileSize,
-    progress,
     previewFrame,
     onRemove,
     videoRef,
@@ -38,7 +37,6 @@ function UploadedMediaCard({
     url: string;
     fileName: string;
     fileSize: number;
-    progress: number;
     previewFrame?: string;
     onRemove: () => void;
     videoRef?: React.RefObject<HTMLVideoElement | null>;
@@ -354,7 +352,6 @@ export default function InstagramUploadFormClient({ accountName }: { accountName
                                         url={url}
                                         fileName={mediaFiles[i]?.name || "upload"}
                                         fileSize={mediaFiles[i]?.size || 0}
-                                        progress={mediaProgress}
                                         previewFrame={i === 0 ? videoPreviewFrame : undefined}
                                         videoRef={i === 0 ? videoRef : undefined}
                                         onVideoLoaded={i === 0 ? captureVideoFrame : undefined}

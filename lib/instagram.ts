@@ -5,7 +5,6 @@ async function fetchGraphApi(endpoint: string, options: RequestInit = {}) {
     // Use latest stable Graph API version
     const baseUrl = "https://graph.instagram.com/v22.0";
     const url = `${baseUrl}/${endpoint}`;
-    console.log("[Instagram API] →", options.method || "GET", url.replace(/access_token=[^&]+/, "access_token=REDACTED"));
     const response = await fetch(url, options);
     const data = await response.json();
 
@@ -60,7 +59,6 @@ export async function uploadInstagramPhoto(
 
     const { platformId: instagramAccountId, accessToken: rawToken } = connection;
     const accessToken = rawToken.trim();
-    console.log("[IG Photo] accountId:", instagramAccountId, "tokenLen:", accessToken.length, "prefix:", accessToken.slice(0, 10));
 
     try {
         if (mediaUrls.length === 1) {
@@ -133,8 +131,7 @@ export async function uploadInstagramPhoto(
 export async function uploadInstagramVideo(
     userId: string,
     mediaUrls: string[],
-    caption?: string,
-    isReel: boolean = false
+    caption?: string
 ) {
     const connection = await prisma.platformConnection.findUnique({
         where: {
@@ -151,7 +148,6 @@ export async function uploadInstagramVideo(
 
     const { platformId: instagramAccountId, accessToken: rawToken } = connection;
     const accessToken = rawToken.trim();
-    console.log("[IG Video] accountId:", instagramAccountId, "tokenLen:", accessToken.length, "prefix:", accessToken.slice(0, 10));
 
     try {
         const videoUrl = mediaUrls[0];
