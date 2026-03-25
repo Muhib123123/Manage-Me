@@ -229,6 +229,7 @@ export default function Sidebar({ onClose, connections = [], plan = "FREE" }: Si
                 <div className="mx-3 mb-3">
                     <Link
                         href="/pricing"
+                        onClick={(e) => handleNavClick(e, "/pricing")}
                         className="
                             flex items-center gap-2 px-3 py-2.5 rounded-lg no-underline
                             bg-[var(--accent)]/8 border border-[var(--accent)]/20
