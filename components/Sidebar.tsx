@@ -261,7 +261,7 @@ export default function Sidebar({ onClose, connections = [], plan = "FREE" }: Si
                         Terms of Service
                     </Link>
                 </div>
-                <p className="text-[10px] text-[var(--muted)] font-medium">Manage Me · Social Scheduler</p>                
+                <p className="text-[12px] text-[var(--muted)] font-medium">Manage Me · Social Scheduler</p>                
             </div>
         </aside>
     );
